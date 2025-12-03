@@ -3,7 +3,7 @@ const DRAWN_URLS_KEY = 'tarotDrawnUrls';
 const DRAWN_URLS_LIMIT = 20;            
 const RESET_TIME_KEY = 'tarotResetTime'; 
 const RESET_DURATION_MS = 24 * 60 * 60 * 1000; 
-let resetTimer = null; // ★ タイマー管理用の変数
+let resetTimer = null; 
 
 // ----------------------------------------------------
 // ページ読み込み時に日付を表示
@@ -28,18 +28,33 @@ function displayCurrentDate() {
 }
 
 // ----------------------------------------------------
+// ★ 新機能: 強制リセット処理
+// ----------------------------------------------------
+function forceReset() {
+    if (confirm("本当に抽選履歴をリセットして、すぐに新しいカードを引きますか？\n（本日の抽選はリセットされます）")) {
+        // タイマーをクリア
+        if (resetTimer) clearInterval(resetTimer); 
+        
+        // 履歴とリセット時間をクリア
+        localStorage.removeItem(DRAWN_URLS_KEY);
+        localStorage.removeItem(RESET_TIME_KEY);
+        
+        alert("履歴をリセットしました。再度抽選してください。");
+        window.location.reload(); // ページをリロードして初期状態に戻す
+    }
+}
+
+// ----------------------------------------------------
 // 抽選待ちメッセージを表示する関数
 // ----------------------------------------------------
 function showWaitMessage(resetTime) {
     const now = new Date();
-    let diffMs = resetTime - now.getTime(); // 残り時間を計算
+    let diffMs = resetTime - now.getTime(); 
     
-    // 既にタイマーが動いていればクリア
     if (resetTimer) {
         clearInterval(resetTimer);
     }
     
-    // リセット時間を過ぎていたら強制リセット
     if (diffMs <= 0) {
         localStorage.removeItem(DRAWN_URLS_KEY);
         localStorage.removeItem(RESET_TIME_KEY);
@@ -54,19 +69,16 @@ function showWaitMessage(resetTime) {
     
     const container = document.querySelector('.container');
     
-    // 1秒ごとに残り時間を更新するタイマーを設定 ★
     resetTimer = setInterval(() => {
         const now = new Date();
         diffMs = resetTime - now.getTime();
         
         if (diffMs <= 0) {
-            // タイマー終了
             clearInterval(resetTimer);
-            showWaitMessage(0); // ゼロとして再呼び出しし、リセット処理へ移行
+            showWaitMessage(0); 
             return;
         }
 
-        // 残り時間計算
         const hours = Math.floor(diffMs / (1000 * 60 * 60));
         const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
@@ -80,16 +92,29 @@ function showWaitMessage(resetTime) {
                 <h1>ワンオラクル：<br>タロット占い</h1>
                 <p style="color: red; font-size: 20px;">本日のカードはすべて引かれました。</p>
                 <p style="margin-top: 30px;">
-                    次の抽選まで<br>
+                    <strong>星のチカラの回復まで</strong><br>
                     <strong>${remainingTimeText}</strong><br>
                     お待ちください。
                 </p>
                 <p style="font-size: 14px; margin-top: 10px;">（リセット時刻: ${resetTimeString}）</p>
+
+                <button onclick="forceReset()" style="
+                    margin-top: 40px; 
+                    background-color: #f0f0f0; 
+                    color: #555; 
+                    border: 1px solid #ccc;
+                    padding: 10px 20px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    border-radius: 5px;
+                ">
+                    ★ リセットして今すぐ引き直す
+                </button>
             `;
             displayCurrentDate(); 
         }
 
-    }, 1000); // 1秒ごとに実行
+    }, 1000); 
 }
 
 
@@ -107,7 +132,6 @@ async function getRandomUrlAndRedirect() {
     } 
     
     if (savedResetTime && nowTimestamp >= parseInt(savedResetTime, 10)) {
-        // リセット時間を過ぎていたら、タイマーをクリアしてから履歴もクリア
         if (resetTimer) clearInterval(resetTimer);
         localStorage.removeItem(DRAWN_URLS_KEY);
         localStorage.removeItem(RESET_TIME_KEY);
@@ -168,7 +192,6 @@ window.onload = function() {
     const savedResetTime = localStorage.getItem(RESET_TIME_KEY);
     const nowTimestamp = new Date().getTime();
     if (savedResetTime && nowTimestamp < parseInt(savedResetTime, 10)) {
-        // リセット時間前なら待機メッセージを動的に表示
         showWaitMessage(parseInt(savedResetTime, 10));
     }
 };
