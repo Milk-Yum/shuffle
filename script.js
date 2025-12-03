@@ -89,7 +89,7 @@ function showWaitMessage(resetTime) {
         if (container) {
             container.innerHTML = `
                 <div id="dateDisplay"></div>
-                <h1>ワンオラクル：<br>タロット占い</h1>
+                <h1>：ワンオラクル：<br>タロット占い</h1>
                 <p style="color: red; font-size: 20px;">本日のカードはすべて引かれました。</p>
                 <p style="margin-top: 30px;">
                     <strong>星のチカラの回復まで</strong><br>
@@ -195,3 +195,4 @@ window.onload = function() {
         showWaitMessage(parseInt(savedResetTime, 10));
     }
 };
+
