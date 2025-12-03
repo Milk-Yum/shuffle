@@ -33,7 +33,7 @@ function getNextResetTime() {
 function displayCurrentDate() {
     const now = new Date();
     
-    // ★ 修正: 月と日の表示からゼロ詰めを削除
+    // 月と日の表示からゼロ詰めを削除
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
     const day = now.getDate();
@@ -87,15 +87,15 @@ function showWaitMessage(resetTime) {
 
     const resetDate = new Date(resetTime);
     
-    // ★ 修正: 月、日、時の表示からゼロ詰めを削除
+    // 月、日、時の表示からゼロ詰めを削除
     const resetDateString = resetDate.toLocaleDateString('ja-JP', {
         year: 'numeric',
-        month: 'numeric', // '2-digit' -> 'numeric'
-        day: 'numeric',   // '2-digit' -> 'numeric'
+        month: 'numeric', 
+        day: 'numeric',   
         weekday: 'short'
     }).replace(/\//g, '/'); 
     const resetTimeString = resetDate.toLocaleTimeString('ja-JP', { 
-        hour: 'numeric',  // '2-digit' -> 'numeric'
+        hour: 'numeric',  
         minute: '2-digit', 
         hour12: false 
     }); 
@@ -118,7 +118,8 @@ function showWaitMessage(resetTime) {
         const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
         
-        const remainingTimeText = `${String(hours).padStart(2, '0')}時間 ${String(minutes).padStart(2, '0')}分 ${String(seconds).padStart(2, '0')}秒`;
+        // ★ 修正: カウントダウンのゼロ詰めを削除
+        const remainingTimeText = `${hours}時間 ${minutes}分 ${seconds}秒`;
         
         if (container) {
             container.innerHTML = `
