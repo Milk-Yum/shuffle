@@ -81,6 +81,9 @@ function showWaitMessage(resetTime) {
         hour12: false 
     }); // 13:40 形式
     
+    // ★ 日付と時間をスペース1個で結合し、リセットメッセージとして使用
+    const resetDateTimeCombined = `${resetDateString} ${resetTimeString}`;
+    
     const container = document.querySelector('.container');
     
     resetTimer = setInterval(() => {
@@ -111,10 +114,8 @@ function showWaitMessage(resetTime) {
                     お待ちください。
                 </p>
                 
-                <p style="font-size: 14px; margin-top: 10px;">
-                    リセット日時：<br>
-                    ${resetDateString}<br>
-                    ${resetTimeString}
+                <p style="font-size: 14px; margin-top: 10px; white-space: nowrap;">
+                    リセット日時： <strong>${resetDateTimeCombined}</strong>
                 </p>
 
                 <button onclick="forceReset()" style="
@@ -211,6 +212,4 @@ window.onload = function() {
     const savedResetTime = localStorage.getItem(RESET_TIME_KEY);
     const nowTimestamp = new Date().getTime();
     if (savedResetTime && nowTimestamp < parseInt(savedResetTime, 10)) {
-        showWaitMessage(parseInt(savedResetTime, 10));
-    }
-};
+        showWaitMessage(parseInt(savedResetTime,
