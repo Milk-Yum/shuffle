@@ -1,5 +1,4 @@
 // --- 設定値 ---
-// ★ 履歴、リセット時間に関するキー名を「星」に関連する名前に変更
 const DRAWN_URLS_KEY = 'tarotDrawnStars'; 
 const DRAWN_URLS_LIMIT = 20;            
 const RESET_TIME_KEY = 'tarotStarResetTime'; 
@@ -32,7 +31,7 @@ function displayCurrentDate() {
 // ★ 新機能: 強制リセット処理 (「履歴」を「星」に置換)
 // ----------------------------------------------------
 function forceReset() {
-    // ★ テキスト修正: 「抽選履歴」を「星」に
+    // テキスト修正: 「抽選履歴」を「星」に
     if (confirm("本当に星をリセットして、すぐに新しいカードを引きますか？\n（本日の星はリセットされます）")) {
         // タイマーをクリア
         if (resetTimer) clearInterval(resetTimer); 
@@ -41,7 +40,7 @@ function forceReset() {
         localStorage.removeItem(DRAWN_URLS_KEY);
         localStorage.removeItem(RESET_TIME_KEY);
         
-        // ★ テキスト修正: 「抽選」を「星」に
+        // テキスト修正: 「抽選」を「星」に
         alert("星をリセットしました。再度星を引いてください。");
         window.location.reload(); // ページをリロードして初期状態に戻す
     }
@@ -61,15 +60,26 @@ function showWaitMessage(resetTime) {
     if (diffMs <= 0) {
         localStorage.removeItem(DRAWN_URLS_KEY);
         localStorage.removeItem(RESET_TIME_KEY);
-        // ★ テキスト修正: 「抽選」を「星」に
+        // テキスト修正: 「抽選」を「星」に
         alert("星を引くことが可能になりました。ページを更新します。");
         window.location.reload();
         return;
     }
 
     const resetDate = new Date(resetTime);
-    const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false }; 
-    const resetTimeString = resetDate.toLocaleTimeString('ja-JP', timeOptions);
+    
+    // ★ リセット日時をフォーマット
+    const resetDateString = resetDate.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        weekday: 'short'
+    }).replace(/\//g, '/'); // 2025/12/02(水) 形式
+    const resetTimeString = resetDate.toLocaleTimeString('ja-JP', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false 
+    }); // 13:40 形式
     
     const container = document.querySelector('.container');
     
@@ -94,13 +104,18 @@ function showWaitMessage(resetTime) {
             container.innerHTML = `
                 <div id="dateDisplay"></div>
                 <h1>：ワンオラクル：<br>タロット占い</h1>
-                <p style="color: red; font-size: 20px;">本日の星はすべて引かれました。</p>
+                <p style="color: red; font-size: 20px;">本日のカードはすべて引かれました。</p>
                 <p style="margin-top: 30px;">
                     <strong>星の回復まで</strong><br>
                     <strong>${remainingTimeText}</strong><br>
                     お待ちください。
                 </p>
-                <p style="font-size: 14px; margin-top: 10px;">（リセット時刻: ${resetTimeString}）</p>
+                
+                <p style="font-size: 14px; margin-top: 10px;">
+                    リセット日時：<br>
+                    ${resetDateString}<br>
+                    ${resetTimeString}
+                </p>
 
                 <button onclick="forceReset()" style="
                     margin-top: 40px; 
@@ -112,7 +127,7 @@ function showWaitMessage(resetTime) {
                     cursor: pointer;
                     border-radius: 5px;
                 ">
-                    ★ リセットして今すぐ星を引く
+                    ★今すぐリセット★
                 </button>
             `;
             displayCurrentDate(); 
@@ -155,7 +170,7 @@ async function getRandomUrlAndRedirect() {
             .map(url => url.trim())
             .filter(url => url !== '' && !url.startsWith('#')); 
 
-        // 3. 履歴の読み込みと抽選リストの作成 (DRAWN_URLS_KEY が変わったため、最初のアクセスでは空になります)
+        // 3. 履歴の読み込みと抽選リストの作成
         let drawnUrls = JSON.parse(localStorage.getItem(DRAWN_URLS_KEY) || '[]');
         const eligibleUrls = urlList.filter(url => !drawnUrls.includes(url));
 
