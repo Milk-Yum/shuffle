@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ランダム占いサイト</title>
+    <title>ワンオラクル：タロット占い</title>
     
     <script src="script.js" defer></script> 
 
@@ -11,6 +11,7 @@
         /* スマホ/PCでの中央表示とデザイン設定 */
         body {
             display: flex;
+            flex-direction: column; /* 縦に並べる */
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -22,6 +23,13 @@
         
         .container {
             padding: 20px;
+        }
+
+        #dateDisplay {
+            /* 日付表示エリアのスタイル */
+            font-size: 16px;
+            color: #777;
+            margin-bottom: 20px;
         }
 
         #randomButton {
@@ -46,19 +54,20 @@
             color: #555;
             font-size: 18px;
             margin-top: 10px;
+            white-space: pre-line; /* 改行を有効にする */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>今日のタロット占い</h1>
+        <div id="dateDisplay"></div> 
+        
+        <h1>ワンオラクル：タロット占い</h1>
         
         <button id="randomButton" onclick="getRandomUrlAndRedirect()">★</button>
 
-        <p>上の星をタップすると、</p>
-        <p>カードを引くことができます。</p>
+        <p>星をタップして、
+カードを引きます。</p>
     </div>
 </body>
-
 </html>
-
