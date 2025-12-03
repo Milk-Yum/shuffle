@@ -28,10 +28,10 @@ function displayCurrentDate() {
 }
 
 // ----------------------------------------------------
-// ★ 新機能: 強制リセット処理 (「履歴」を「星」に置換)
+// ★ 新機能: 強制リセット処理
 // ----------------------------------------------------
 function forceReset() {
-    // テキスト修正: 「抽選履歴」を「星」に
+    // 履歴リセット確認メッセージ
     if (confirm("本当に星をリセットして、すぐに新しいカードを引きますか？\n（本日の星はリセットされます）")) {
         // タイマーをクリア
         if (resetTimer) clearInterval(resetTimer); 
@@ -40,8 +40,8 @@ function forceReset() {
         localStorage.removeItem(DRAWN_URLS_KEY);
         localStorage.removeItem(RESET_TIME_KEY);
         
-        // テキスト修正: 「抽選」を「星」に
-        alert("星をリセットしました。再度星を引いてください。");
+        // ★ ここを修正しました
+        alert("星をリセットしました。再度カードを引いてください。");
         window.location.reload(); // ページをリロードして初期状態に戻す
     }
 }
@@ -74,12 +74,12 @@ function showWaitMessage(resetTime) {
         month: '2-digit',
         day: '2-digit',
         weekday: 'short'
-    }).replace(/\//g, '/'); // 2025/12/02(水) 形式
+    }).replace(/\//g, '/'); 
     const resetTimeString = resetDate.toLocaleTimeString('ja-JP', { 
         hour: '2-digit', 
         minute: '2-digit', 
         hour12: false 
-    }); // 13:40 形式
+    }); 
     
     // 日付と時間をスペース1個で結合
     const resetDateTimeCombined = `${resetDateString} ${resetTimeString}`;
