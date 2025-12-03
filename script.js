@@ -1,11 +1,33 @@
-// Fisher-Yatesシャッフルは不要、単純なランダムインデックス選択で十分
+// GitHub Pagesにデプロイする際、ブラウザの言語設定に基づいて曜日を日本語で取得します。
+function displayCurrentDate() {
+    const now = new Date();
+    
+    // 曜日を日本語で取得
+    const weekday = new Intl.DateTimeFormat('ja-JP', { weekday: 'short' }).format(now);
+    
+    // YYYY/MM/DD 形式の文字列を作成
+    const formattedDate = now.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).replace(/\//g, '/'); // スラッシュ区切りに修正
+
+    // 最終的な表示形式 (例: 2025/12/03 (水))
+    const dateString = `${formattedDate} (${weekday})`;
+    
+    // HTMLの要素に日付を挿入
+    const dateElement = document.getElementById('dateDisplay');
+    if (dateElement) {
+        dateElement.textContent = dateString;
+    }
+}
+
 
 /**
  * リストファイル（urls.txt）を取得し、ランダムなURLにリダイレクトする関数
  */
 async function getRandomUrlAndRedirect() {
     // 1. ファイルの取得
-    // GitHub Pagesにデプロイすると、このパス（urls.txt）でファイルが取得できます
     try {
         const response = await fetch('urls.txt');
         if (!response.ok) {
@@ -15,7 +37,6 @@ async function getRandomUrlAndRedirect() {
         const text = await response.text();
         
         // 2. リストの解析とフィルタリング
-        // 空行やコメント行（#から始まる行）を除去
         const urlList = text.split('\n')
             .map(url => url.trim())
             .filter(url => url !== '' && !url.startsWith('#')); 
@@ -26,7 +47,6 @@ async function getRandomUrlAndRedirect() {
         }
 
         // 3. ランダムなURLの選択
-        // 0 から (リストの長さ - 1) までのランダムなインデックスを生成
         const randomIndex = Math.floor(Math.random() * urlList.length);
         const randomUrl = urlList[randomIndex];
         
@@ -39,3 +59,8 @@ async function getRandomUrlAndRedirect() {
         alert('URLの取得中にエラーが発生しました。コンソールを確認してください。');
     }
 }
+
+// ページが完全に読み込まれた後に日付表示処理を実行
+window.onload = function() {
+    displayCurrentDate();
+};
