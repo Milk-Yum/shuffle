@@ -212,4 +212,6 @@ window.onload = function() {
     const savedResetTime = localStorage.getItem(RESET_TIME_KEY);
     const nowTimestamp = new Date().getTime();
     if (savedResetTime && nowTimestamp < parseInt(savedResetTime, 10)) {
-        showWaitMessage(parseInt(savedResetTime,
+        showWaitMessage(parseInt(savedResetTime, 10));
+    }
+};
