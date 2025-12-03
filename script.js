@@ -3,6 +3,7 @@ const DRAWN_URLS_KEY = 'tarotDrawnUrls';
 const DRAWN_URLS_LIMIT = 20;            
 const RESET_TIME_KEY = 'tarotResetTime'; 
 const RESET_DURATION_MS = 24 * 60 * 60 * 1000; 
+let resetTimer = null; // ★ タイマー管理用の変数
 
 // ----------------------------------------------------
 // ページ読み込み時に日付を表示
@@ -15,7 +16,7 @@ function displayCurrentDate() {
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     
-    // 曜日を日本語で取得 (Safari互換性のためタイムゾーン指定をしない)
+    // 曜日を日本語で取得
     const weekday = new Intl.DateTimeFormat('ja-JP', { weekday: 'short' }).format(now);
     
     const dateString = `${year}/${month}/${day} (${weekday})`;
@@ -30,10 +31,15 @@ function displayCurrentDate() {
 // 抽選待ちメッセージを表示する関数
 // ----------------------------------------------------
 function showWaitMessage(resetTime) {
-    // 省略：前回のコードと同じ
     const now = new Date();
-    const diffMs = resetTime - now.getTime();
+    let diffMs = resetTime - now.getTime(); // 残り時間を計算
     
+    // 既にタイマーが動いていればクリア
+    if (resetTimer) {
+        clearInterval(resetTimer);
+    }
+    
+    // リセット時間を過ぎていたら強制リセット
     if (diffMs <= 0) {
         localStorage.removeItem(DRAWN_URLS_KEY);
         localStorage.removeItem(RESET_TIME_KEY);
@@ -43,20 +49,47 @@ function showWaitMessage(resetTime) {
     }
 
     const resetDate = new Date(resetTime);
-    // Safariでの互換性のため、時間表示はシンプルな形式に
     const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false }; 
     const resetTimeString = resetDate.toLocaleTimeString('ja-JP', timeOptions);
     
     const container = document.querySelector('.container');
-    if (container) {
-        container.innerHTML = `
-            <div id="dateDisplay"></div>
-            <h1>ワンオラクル：<br>タロット占い</h1>
-            <p style="color: red; font-size: 20px;">本日のカードはすべて引かれました。</p>
-            <p style="margin-top: 30px;">星の力が回復する<br><strong>${resetTimeString}</strong>までお待ちください。</p>
-        `;
-        displayCurrentDate(); 
-    }
+    
+    // 1秒ごとに残り時間を更新するタイマーを設定 ★
+    resetTimer = setInterval(() => {
+        const now = new Date();
+        diffMs = resetTime - now.getTime();
+        
+        if (diffMs <= 0) {
+            // タイマー終了
+            clearInterval(resetTimer);
+            showWaitMessage(0); // ゼロとして再呼び出しし、リセット処理へ移行
+            return;
+        }
+
+        // 残り時間計算
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+        
+        const remainingTimeText = `${String(hours).padStart(2, '0')}時間 ${String(minutes).padStart(2, '0')}分 ${String(seconds).padStart(2, '0')}秒`;
+        
+        // メッセージ表示を更新
+        if (container) {
+            container.innerHTML = `
+                <div id="dateDisplay"></div>
+                <h1>ワンオラクル：<br>タロット占い</h1>
+                <p style="color: red; font-size: 20px;">本日のカードはすべて引かれました。</p>
+                <p style="margin-top: 30px;">
+                    次の抽選まで<br>
+                    <strong>${remainingTimeText}</strong><br>
+                    お待ちください。
+                </p>
+                <p style="font-size: 14px; margin-top: 10px;">（リセット時刻: ${resetTimeString}）</p>
+            `;
+            displayCurrentDate(); 
+        }
+
+    }, 1000); // 1秒ごとに実行
 }
 
 
@@ -74,15 +107,16 @@ async function getRandomUrlAndRedirect() {
     } 
     
     if (savedResetTime && nowTimestamp >= parseInt(savedResetTime, 10)) {
+        // リセット時間を過ぎていたら、タイマーをクリアしてから履歴もクリア
+        if (resetTimer) clearInterval(resetTimer);
         localStorage.removeItem(DRAWN_URLS_KEY);
         localStorage.removeItem(RESET_TIME_KEY);
     }
     
     // 2. 抽選処理の開始
     try {
-        const response = await fetch('urls.txt', { cache: 'no-store' }); // ★重要: Safariでキャッシュ問題を避けるため
+        const response = await fetch('urls.txt', { cache: 'no-store' }); 
         
-        // ★重要: HTTPステータスコードをチェックし、200番台以外はエラーとする
         if (!response.ok) {
             alert(`URLリストの読み込みに失敗しました (Status: ${response.status})。ファイル名を確認してください。`);
             throw new Error(`ファイル読み込みエラー: ${response.status}`);
@@ -101,6 +135,8 @@ async function getRandomUrlAndRedirect() {
             // 4A. 抽選可能なURLがない場合
             const resetTime = nowTimestamp + RESET_DURATION_MS;
             localStorage.setItem(RESET_TIME_KEY, resetTime);
+            
+            // 待機メッセージを表示
             showWaitMessage(resetTime);
             return;
         }
@@ -132,6 +168,7 @@ window.onload = function() {
     const savedResetTime = localStorage.getItem(RESET_TIME_KEY);
     const nowTimestamp = new Date().getTime();
     if (savedResetTime && nowTimestamp < parseInt(savedResetTime, 10)) {
+        // リセット時間前なら待機メッセージを動的に表示
         showWaitMessage(parseInt(savedResetTime, 10));
     }
 };
