@@ -8,3 +8,5 @@ https://milk-yum.github.io/shuffle/Empress_Upright.html
 https://milk-yum.github.io/shuffle/Empress_Reversed.html
 https://milk-yum.github.io/shuffle/Emperor_Upright.html
 https://milk-yum.github.io/shuffle/Emperor_Reversed.html
+https://milk-yum.github.io/shuffle/Hierophant_Upright.html
+https://milk-yum.github.io/shuffle/Hierophant_Reversed.html
