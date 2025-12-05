@@ -1,151 +1,253 @@
-// script.js
+// --- 設定値 ---
+const DRAWN_URLS_KEY = 'tarotDrawnStars';
+// ★ 修正点: 最大抽選回数を10回に制限（ユーザーの要望通り）
+const DRAWN_URLS_LIMIT = 10;
+const RESET_TIME_KEY = 'tarotStarResetTime';
+let resetTimer = null;
 
-// 抽選に使用するURLリストのファイルパス
-const URL_LIST_FILE = 'urls.txt';
-
-// 最大抽選回数を設定（この回数に達すると「浄化/リセット」画面が表示されます）
-const MAX_DRAWS = 10;
-
-// 過去の抽選URLを保存するLocalStorageのキー
-const DRAWN_URLS_KEY = 'drawnUrls';
-
-// 抽選回数を保存するLocalStorageのキー
-const DRAW_COUNT_KEY = 'drawCount';
-
-
-// --- ユーティリティ関数 ---
-
-/**
- * LocalStorageから抽選履歴を取得する。
- * @returns {string[]} 抽選されたURLの配列
- */
-function getDrawnUrls() {
-    const json = localStorage.getItem(DRAWN_URLS_KEY);
-    return json ? JSON.parse(json) : [];
+// ----------------------------------------------------
+// ユーティリティ: 次のリセット時間を計算
+// ----------------------------------------------------
+function getNextResetTime() {
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    let nextReset = new Date(now);
+    
+    // 現在時刻が0時〜12時未満の場合、次のリセットは今日の12時
+    if (currentHour < 12) {
+        nextReset.setHours(12, 0, 0, 0); // 12:00:00.000
+    } 
+    // 現在時刻が12時〜24時未満の場合、次のリセットは翌日の0時
+    else {
+        // 日付を次の日に進め、時間を0時に設定
+        nextReset.setDate(now.getDate() + 1); 
+        nextReset.setHours(0, 0, 0, 0); // 翌日 00:00:00.000
+    }
+    
+    return nextReset.getTime(); // ミリ秒で返す
 }
 
-/**
- * LocalStorageに抽選履歴を保存する。
- * @param {string[]} urls - 抽選されたURLの配列
- */
-function setDrawnUrls(urls) {
-    localStorage.setItem(DRAWN_URLS_KEY, JSON.stringify(urls));
-}
-
-/**
- * LocalStorageから抽選回数を取得する。
- * @returns {number} 現在の抽選回数
- */
-function getDrawCount() {
-    const count = localStorage.getItem(DRAW_COUNT_KEY);
-    return count ? parseInt(count, 10) : 0;
-}
-
-/**
- * LocalStorageに抽選回数を保存する。
- * @param {number} count - 現在の抽選回数
- */
-function setDrawCount(count) {
-    localStorage.setItem(DRAW_COUNT_KEY, count.toString());
-}
-
-/**
- * 抽選履歴と回数をすべてリセットする。
- */
-function resetDrawData() {
-    setDrawnUrls([]);
-    setDrawCount(0);
-    // ユーザーにリセット完了を知らせる（必要であれば）
-    console.log("抽選履歴と回数がリセットされました。");
-}
-
-
-// --- メインロジック ---
-
-/**
- * URLリストファイルから全URLを読み込む。
- * @returns {Promise<string[]>} 全URLの配列
- */
-async function loadUrls() {
-    try {
-        const response = await fetch(URL_LIST_FILE);
-        if (!response.ok) {
-            throw new Error(`Failed to load ${URL_LIST_FILE}: ${response.statusText}`);
-        }
-        const text = await response.text();
-        // 空行や空白のみの行をフィルタリングして配列化
-        return text.split('\n').map(url => url.trim()).filter(url => url.length > 0);
-    } catch (error) {
-        console.error("URLリストの読み込み中にエラーが発生しました:", error);
-        alert("カードリストの読み込みに失敗しました。ファイルが存在するか確認してください。");
-        return [];
+// ----------------------------------------------------
+// ページ読み込み時に日付を表示
+// ----------------------------------------------------
+function displayCurrentDate() {
+    const now = new Date();
+    
+    // 月と日の表示からゼロ詰めを削除
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    
+    // 曜日を日本語で取得
+    const weekday = new Intl.DateTimeFormat('ja-JP', { weekday: 'short' }).format(now);
+    
+    // 形式を YYYY/M/D (曜日) に修正
+    const dateString = `${year}/${month}/${day} (${weekday})`;
+    
+    const dateElement = document.getElementById('dateDisplay');
+    if (dateElement) {
+        dateElement.textContent = dateString;
     }
 }
 
-/**
- * カードを抽選し、そのURLへリダイレクトする。
- */
-async function getRandomUrlAndRedirect() {
-    const allUrls = await loadUrls();
-    let drawnUrls = getDrawnUrls();
-    let drawCount = getDrawCount();
+// ----------------------------------------------------
+// 強制リセット処理
+// ----------------------------------------------------
+function forceReset() {
+    if (confirm("本当に星をリセットして、すぐに新しいカードを引きますか？\n（本日の星はリセットされます）")) {
+        if (resetTimer) clearInterval(resetTimer); 
+        
+        localStorage.removeItem(DRAWN_URLS_KEY);
+        localStorage.removeItem(RESET_TIME_KEY);
+        
+        alert("星をリセットしました。再度カードを引いてください。");
+        window.location.reload();
+    }
+}
 
-    // 1. 最大抽選回数のチェック
-    if (drawCount >= MAX_DRAWS) {
-        // 最大回数に達した場合、浄化画面へリダイレクト
-        window.location.href = 'purge.html'; 
+// ----------------------------------------------------
+// 抽選待ちメッセージを表示する関数
+// ----------------------------------------------------
+function showWaitMessage(resetTime) {
+    const now = new Date();
+    let diffMs = resetTime - now.getTime(); 
+    
+    if (resetTimer) {
+        clearInterval(resetTimer);
+    }
+    
+    if (diffMs <= 0) {
+        // リセット時間を過ぎていた場合、強制リセット
+        localStorage.removeItem(DRAWN_URLS_KEY);
+        localStorage.removeItem(RESET_TIME_KEY);
+        alert("星を引くことが可能になりました。ページを更新します。");
+        window.location.reload();
         return;
     }
 
-    // 2. まだ引かれていないURLを抽出
-    const eligibleUrls = allUrls.filter(url => !drawnUrls.includes(url));
+    const resetDate = new Date(resetTime);
+    
+    // 月、日、時の表示からゼロ詰めを削除
+    const resetDateString = resetDate.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'numeric', 
+        day: 'numeric',   
+        weekday: 'short'
+    }).replace(/\//g, '/'); 
+    const resetTimeString = resetDate.toLocaleTimeString('ja-JP', { 
+        hour: 'numeric',  
+        minute: '2-digit', 
+        hour12: false 
+    }); 
+    
+    const resetDateTimeCombined = `${resetDateString} ${resetTimeString}`;
+    
+    const container = document.querySelector('.container');
+    
+    // ★ 修正: 待機メッセージの表示/更新ロジック
+    resetTimer = setInterval(() => {
+        const now = new Date();
+        diffMs = resetTime - now.getTime();
+        
+        if (diffMs <= 0) {
+            clearInterval(resetTimer);
+            showWaitMessage(0); 
+            return;
+        }
 
-    // 3. 抽選処理
-    let selectedUrl;
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+        
+        const remainingTimeText = `${hours}時間 ${minutes}分 ${seconds}秒`;
+        
+        if (container) {
+            container.innerHTML = `
+                <div id="dateDisplay"></div>
+                <h1>：ワンオラクル：<br>タロット占い</h1>
+                <p style="color: red; font-size: 20px;">カードの浄化が必要になりました</p>
+                <p style="margin-top: 30px;">
+                    <strong>星の回復まで</strong><br>
+                    <strong>${remainingTimeText}</strong><br>
+                    お待ちください。
+                </p>
+                
+                <p style="font-size: 14px; margin-top: 10px; white-space: nowrap;">
+                    リセット日時：<br><strong>${resetDateTimeCombined}</strong>
+                </p>
 
-    if (eligibleUrls.length > 0) {
-        // まだ引かれていないURLからランダムに選択
+                <button onclick="forceReset()" style="
+                    margin-top: 40px; 
+                    background-color: #f0f0f0; 
+                    color: #555; 
+                    border: 1px solid #ccc;
+                    padding: 10px 20px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    border-radius: 5px;
+                ">
+                    ★今すぐリセット★
+                </button>
+            `;
+            displayCurrentDate(); 
+        }
+
+    }, 1000); 
+}
+
+
+/**
+ * メインの抽選処理
+ */
+async function getRandomUrlAndRedirect() {
+    const savedResetTime = localStorage.getItem(RESET_TIME_KEY);
+    const nowTimestamp = new Date().getTime();
+    
+    // 1. リセット時間チェック
+    if (savedResetTime && nowTimestamp < parseInt(savedResetTime, 10)) {
+        showWaitMessage(parseInt(savedResetTime, 10));
+        return;
+    } 
+    
+    if (savedResetTime && nowTimestamp >= parseInt(savedResetTime, 10)) {
+        if (resetTimer) clearInterval(resetTimer);
+        localStorage.removeItem(DRAWN_URLS_KEY);
+        localStorage.removeItem(RESET_TIME_KEY);
+    }
+    
+    // ------------------------------------------------------------------
+    // ★ ここからが追加・修正されたロジック ★
+    // ------------------------------------------------------------------
+    let drawnUrls = JSON.parse(localStorage.getItem(DRAWN_URLS_KEY) || '[]');
+    
+    // 2. 抽選回数制限のチェック（DRAWN_URLS_LIMIT = 10）
+    if (drawnUrls.length >= DRAWN_URLS_LIMIT) { 
+        
+        // 抽選回数制限に達した場合、リセット時間を設定し待機画面へ
+        const resetTime = getNextResetTime();
+        localStorage.setItem(RESET_TIME_KEY, resetTime);
+        showWaitMessage(resetTime);
+        return; 
+    }
+    // ------------------------------------------------------------------
+    
+    // 3. 抽選処理の開始
+    try {
+        const response = await fetch('urls.txt', { cache: 'no-store' }); 
+        
+        if (!response.ok) {
+            alert(`URLリストの読み込みに失敗しました (Status: ${response.status})。ファイル名を確認してください。`);
+            throw new Error(`ファイル読み込みエラー: ${response.status}`);
+        }
+        
+        const text = await response.text();
+        const urlList = text.split('\n')
+            .map(url => url.trim())
+            .filter(url => url !== '' && !url.startsWith('#')); 
+
+        // 4. 抽選リストの作成
+        // ここでの drawnUrls は上で既に取得済み
+        const eligibleUrls = urlList.filter(url => !drawnUrls.includes(url));
+
+        if (eligibleUrls.length === 0) {
+            // 5A. カードリストすべて（44枚）を引ききった場合
+            
+            // リセット時間を固定値（次の0時/12時）に設定
+            const resetTime = getNextResetTime();
+            localStorage.setItem(RESET_TIME_KEY, resetTime);
+            
+            // 待機メッセージを表示
+            showWaitMessage(resetTime);
+            return;
+        }
+
+        // 5B. ランダムなURLの選択
         const randomIndex = Math.floor(Math.random() * eligibleUrls.length);
-        selectedUrl = eligibleUrls[randomIndex];
+        const randomUrl = eligibleUrls[randomIndex];
+        
+        // 6. 履歴の更新と保存
+        drawnUrls.push(randomUrl);
+        // drawnUrls.length > DRAWN_URLS_LIMIT のチェックは不要になりました
+        localStorage.setItem(DRAWN_URLS_KEY, JSON.stringify(drawnUrls));
+        
+        // 7. ページ遷移
+        window.location.href = randomUrl;
 
-        // 抽選履歴に追加
-        drawnUrls.push(selectedUrl);
-        setDrawnUrls(drawnUrls);
-
-        // 抽選回数をインクリメントして保存
-        drawCount++;
-        setDrawCount(drawCount);
-
-        // 選択されたURLへリダイレクト
-        window.location.href = selectedUrl;
-
-    } else {
-        // 4. すべてのURLを引ききった場合 (通常、このルートは drawCount >= MAX_DRAWS が先に処理するため通らないが、保険として)
-        console.warn("すべてのカードを引ききりました。リセットが必要です。");
-        window.location.href = 'purge.html'; 
+    } catch (error) {
+        console.error("エラーが発生しました:", error);
+        alert('エラーが発生しました。コンソールを確認してください。');
     }
 }
 
-// ボタンクリック時のイベントリスナー設定
-document.addEventListener('DOMContentLoaded', () => {
-    const drawButton = document.getElementById('draw-card-button');
-    if (drawButton) {
-        drawButton.addEventListener('click', getRandomUrlAndRedirect);
-    }
+// ページが完全に読み込まれた後に日付表示処理と待機状態チェックを実行
+window.onload = function() {
+    displayCurrentDate();
     
-    // purge.html にリセットボタンがある場合、そのイベントを設定する
-    const resetButton = document.getElementById('reset-button');
-    if (resetButton) {
-        resetButton.addEventListener('click', () => {
-            resetDrawData();
-            // リセット後、元の抽選画面に戻る
-            window.location.href = 'index.html'; 
-        });
+    const savedResetTime = localStorage.getItem(RESET_TIME_KEY);
+    const nowTimestamp = new Date().getTime();
+    if (savedResetTime && nowTimestamp < parseInt(savedResetTime, 10)) {
+        showWaitMessage(parseInt(savedResetTime, 10));
     }
-
-    // 抽選回数を表示する（デバッグ用やユーザー向け）
-    const countDisplay = document.getElementById('draw-count-display');
-    if (countDisplay) {
-        countDisplay.textContent = `現在の抽選回数: ${getDrawCount()} / ${MAX_DRAWS}`;
-    }
-});
+    // 抽選ボタンのイベントリスナーはHTML側で onclick="getRandomUrlAndRedirect()" として設定されている前提
+};
