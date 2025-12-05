@@ -10,3 +10,12 @@ https://milk-yum.github.io/shuffle/Emperor_Upright.html
 https://milk-yum.github.io/shuffle/Emperor_Reversed.html
 https://milk-yum.github.io/shuffle/Hierophant_Upright.html
 https://milk-yum.github.io/shuffle/Hierophant_Reversed.html
+https://milk-yum.github.io/shuffle/Lovers_Upright.html
+https://milk-yum.github.io/shuffle/Lovers_Reversed.html
+https://milk-yum.github.io/shuffle/Chariot_Upright.html
+https://milk-yum.github.io/shuffle/Chariot_Reversed.html
+https://milk-yum.github.io/shuffle/Strength_Upright.html
+https://milk-yum.github.io/shuffle/Strength_Reversed.html
+https://milk-yum.github.io/shuffle/Hermit_Upright.html
+https://milk-yum.github.io/shuffle/Hermit_Reversed.html
+
