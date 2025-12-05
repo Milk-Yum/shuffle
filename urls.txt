@@ -28,3 +28,17 @@ https://milk-yum.github.io/shuffle/Death_Upright.html
 https://milk-yum.github.io/shuffle/Death_Reversed.html
 https://milk-yum.github.io/shuffle/Temperance_Upright.html
 https://milk-yum.github.io/shuffle/Temperance_Reversed.html
+https://milk-yum.github.io/shuffle/Devil_Upright.html
+https://milk-yum.github.io/shuffle/Devil_Reversed.html
+https://milk-yum.github.io/shuffle/Tower_Upright.html
+https://milk-yum.github.io/shuffle/Tower_Reversed.html
+https://milk-yum.github.io/shuffle/Star_Upright.html
+https://milk-yum.github.io/shuffle/Star_Reversed.html
+https://milk-yum.github.io/shuffle/Moon_Upright.html
+https://milk-yum.github.io/shuffle/Moon_Reversed.html
+https://milk-yum.github.io/shuffle/Sun_Upright.html
+https://milk-yum.github.io/shuffle/Sun_Reversed.html
+https://milk-yum.github.io/shuffle/Judgement_Upright.html
+https://milk-yum.github.io/shuffle/Judgement_Reversed.html
+https://milk-yum.github.io/shuffle/World_Upright.html
+https://milk-yum.github.io/shuffle/World_Reversed.html
