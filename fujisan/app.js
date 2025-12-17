@@ -157,6 +157,26 @@ function FujiCompass() {
           <>
             <div className="relative w-64 h-64 mx-auto mb-8">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full border-8 border-blue-300 shadow-inner">
+                {/* 方位記号（回転する） */}
+                <div
+                  className="absolute inset-0 transition-transform duration-300 ease-out"
+                  style={{ transform: `rotate(${-heading}deg)` }}
+                >
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-600">
+                    N
+                  </div>
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-400">
+                    S
+                  </div>
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
+                    W
+                  </div>
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
+                    E
+                  </div>
+                </div>
+                
+                {/* 矢印（富士山の方向を指す） */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div
                     className="transition-transform duration-300 ease-out"
@@ -164,19 +184,6 @@ function FujiCompass() {
                   >
                     <Navigation className="w-24 h-24 text-red-500 drop-shadow-lg" fill="currentColor" />
                   </div>
-                </div>
-                
-                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-600">
-                  N
-                </div>
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-400">
-                  S
-                </div>
-                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
-                  W
-                </div>
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
-                  E
                 </div>
               </div>
             </div>
