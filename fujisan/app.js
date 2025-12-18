@@ -91,6 +91,9 @@ function FujiCompass() {
 
   const handleOrientation = (event) => {
     let alpha = event.alpha;
+    const beta = event.beta;   // 前後の傾き
+    const gamma = event.gamma; // 左右の傾き
+    
     if (event.webkitCompassHeading) {
       alpha = event.webkitCompassHeading;
     } else if (alpha !== null) {
@@ -272,7 +275,7 @@ function FujiCompass() {
       </div>
       ) : (
         // ARモード
-        <div className="relative w-full h-screen">
+        <div className="relative w-full h-screen overflow-hidden bg-black">
           <video
             id="ar-video"
             autoPlay
@@ -281,24 +284,43 @@ function FujiCompass() {
           />
           
           {/* AR オーバーレイ */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            {/* 矢印 */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            {/* 3D風矢印（手前が大きく奥が小さい） */}
             <div
               className="transition-transform duration-300 ease-out mb-8"
-              style={{ transform: `rotate(${arrowRotation}deg)` }}
+              style={{ 
+                transform: `rotate(${arrowRotation}deg)`,
+                perspective: '1000px'
+              }}
             >
-              <Navigation className="w-32 h-32 text-red-500 drop-shadow-2xl" fill="currentColor" />
+              <div style={{
+                transform: 'rotateX(60deg)',
+                transformStyle: 'preserve-3d'
+              }}>
+                {/* 矢印の影 */}
+                <div className="absolute" style={{
+                  transform: 'translateZ(-20px) scale(0.9)',
+                  opacity: 0.3,
+                  filter: 'blur(8px)'
+                }}>
+                  <Navigation className="w-40 h-40 text-black" fill="currentColor" />
+                </div>
+                {/* メインの矢印 */}
+                <Navigation className="w-40 h-40 text-red-500 drop-shadow-2xl" fill="currentColor" style={{
+                  filter: 'drop-shadow(0 0 20px rgba(239, 68, 68, 0.8))'
+                }} />
+              </div>
             </div>
             
             {/* 情報パネル */}
             {distance && (
-              <div className="bg-black bg-opacity-70 text-white rounded-2xl px-6 py-4 backdrop-blur-sm">
+              <div className="bg-black bg-opacity-70 text-white rounded-2xl px-8 py-5 backdrop-blur-sm border border-white border-opacity-20">
                 <div className="text-center">
-                  <div className="text-4xl font-bold mb-2">
+                  <div className="text-5xl font-bold mb-2 text-red-400">
                     {distance.toFixed(1)} km
                   </div>
-                  <div className="text-sm opacity-80">
-                    富士山まで {bearing.toFixed(0)}°
+                  <div className="text-base opacity-90">
+                    富士山まで {bearing.toFixed(0)}° 🗻
                   </div>
                 </div>
               </div>
@@ -308,22 +330,46 @@ function FujiCompass() {
           {/* 閉じるボタン */}
           <button
             onClick={toggleArMode}
-            className="absolute top-4 right-4 bg-white bg-opacity-90 text-gray-800 rounded-full p-4 shadow-lg hover:bg-opacity-100 transition-all"
+            className="absolute top-6 right-6 bg-white bg-opacity-90 text-gray-800 rounded-full p-4 shadow-lg hover:bg-opacity-100 transition-all z-10"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
           
-          {/* コンパス表示 */}
-          <div className="absolute top-4 left-4 w-24 h-24">
-            <div className="relative w-full h-full bg-white bg-opacity-90 rounded-full border-4 border-blue-400 shadow-lg">
-              <div
-                className="absolute inset-0 transition-transform duration-300 ease-out"
-                style={{ transform: `rotate(${-heading}deg)` }}
-              >
-                <div className="absolute top-1 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-700">
-                  N
+          {/* 3D風コンパス（楕円形・のぞき込む角度） */}
+          <div className="absolute top-6 left-6 w-32 h-20">
+            <div className="relative w-full h-full" style={{
+              perspective: '500px'
+            }}>
+              <div className="absolute inset-0 bg-gradient-to-b from-gray-100 to-gray-300 rounded-full border-4 border-gray-400 shadow-2xl" style={{
+                transform: 'rotateX(60deg)',
+                transformStyle: 'preserve-3d',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 2px 10px rgba(255,255,255,0.3)'
+              }}>
+                <div
+                  className="absolute inset-0 transition-transform duration-300 ease-out"
+                  style={{ transform: `rotate(${-heading}deg)` }}
+                >
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-sm font-bold text-red-600">
+                    N
+                  </div>
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-500">
+                    S
+                  </div>
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-500">
+                    W
+                  </div>
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-500">
+                    E
+                  </div>
+                </div>
+                {/* コンパスの針 */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-1 h-10 bg-red-600 rounded-full" style={{
+                    transformOrigin: 'center',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                  }}></div>
                 </div>
               </div>
             </div>
