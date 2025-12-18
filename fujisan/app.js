@@ -117,6 +117,34 @@ function FujiCompass() {
 
   // 矢印の回転角度（富士山の方位 - デバイスの向き）
   const arrowRotation = bearing - heading;
+  
+  // ARモード用：矢印の位置と回転を計算
+  const getArrowPosition = () => {
+    // 正規化した角度差（-180〜180度）
+    let angleDiff = arrowRotation;
+    while (angleDiff > 180) angleDiff -= 360;
+    while (angleDiff < -180) angleDiff += 360;
+    
+    // 角度差に応じて位置を計算
+    // -90〜90度の範囲で水平位置を決定（-90=左端、0=中央、90=右端）
+    const horizontalPos = Math.max(-90, Math.min(90, angleDiff));
+    const leftPercent = ((horizontalPos + 90) / 180) * 100;
+    
+    // 正面に近いほど上に、横や後ろなら水平に
+    const isNearFront = Math.abs(angleDiff) < 60;
+    const verticalPercent = isNearFront ? 40 : 50;
+    
+    // 矢印の回転角度（横向きの時は水平に）
+    const rotation = isNearFront ? 0 : (angleDiff > 0 ? 90 : -90);
+    
+    return {
+      left: `${leftPercent}%`,
+      top: `${verticalPercent}%`,
+      rotation: rotation
+    };
+  };
+  
+  const arrowPos = getArrowPosition();
 
   // ARモード切り替え
   const toggleArMode = async () => {
@@ -284,12 +312,14 @@ function FujiCompass() {
           />
           
           {/* AR オーバーレイ */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            {/* 3D風矢印（手前が大きく奥が小さい） */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* 3D風矢印（位置が動的に変わる） */}
             <div
-              className="transition-transform duration-300 ease-out mb-8"
+              className="absolute transition-all duration-500 ease-out"
               style={{ 
-                transform: `rotate(${arrowRotation}deg)`,
+                left: arrowPos.left,
+                top: arrowPos.top,
+                transform: `translate(-50%, -50%) rotate(${arrowPos.rotation}deg)`,
                 perspective: '1000px'
               }}
             >
@@ -312,15 +342,17 @@ function FujiCompass() {
               </div>
             </div>
             
-            {/* 情報パネル */}
+            {/* 情報パネル（下部中央） */}
             {distance && (
-              <div className="bg-black bg-opacity-70 text-white rounded-2xl px-8 py-5 backdrop-blur-sm border border-white border-opacity-20">
-                <div className="text-center">
-                  <div className="text-5xl font-bold mb-2 text-red-400">
-                    {distance.toFixed(1)} km
-                  </div>
-                  <div className="text-base opacity-90">
-                    富士山まで {bearing.toFixed(0)}° 🗻
+              <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2">
+                <div className="bg-black bg-opacity-70 text-white rounded-2xl px-8 py-5 backdrop-blur-sm border border-white border-opacity-20">
+                  <div className="text-center">
+                    <div className="text-5xl font-bold mb-2 text-red-400">
+                      {distance.toFixed(1)} km
+                    </div>
+                    <div className="text-base opacity-90">
+                      富士山まで {bearing.toFixed(0)}° 🗻
+                    </div>
                   </div>
                 </div>
               </div>
