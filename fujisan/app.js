@@ -7,6 +7,8 @@ function FujiCompass() {
   const [distance, setDistance] = useState(null);
   const [error, setError] = useState('');
   const [permissionGranted, setPermissionGranted] = useState(false);
+  const [arMode, setArMode] = useState(false);
+  const [stream, setStream] = useState(null);
 
   // 富士山の座標
   const FUJI_LAT = 35.3606;
@@ -103,11 +105,46 @@ function FujiCompass() {
     return () => {
       window.removeEventListener('deviceorientationabsolute', handleOrientation);
       window.removeEventListener('deviceorientation', handleOrientation);
+      // カメラストリームのクリーンアップ
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
     };
-  }, []);
+  }, [stream]);
 
   // 矢印の回転角度（富士山の方位 - デバイスの向き）
   const arrowRotation = bearing - heading;
+
+  // ARモード切り替え
+  const toggleArMode = async () => {
+    if (!arMode) {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        setStream(mediaStream);
+        setArMode(true);
+      } catch (err) {
+        setError('カメラへのアクセスが拒否されました');
+      }
+    } else {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
+      setArMode(false);
+    }
+  };
+
+  // カメラ映像の更新
+  useEffect(() => {
+    if (stream && arMode) {
+      const video = document.getElementById('ar-video');
+      if (video) {
+        video.srcObject = stream;
+      }
+    }
+  }, [stream, arMode]);
 
   // Lucide Reactのアイコンを手動で実装
   const Mountain = ({ className }) => (
@@ -131,12 +168,19 @@ function FujiCompass() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-400 to-blue-200 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
-        <div className="text-center mb-8">
-          <Mountain className="w-16 h-16 mx-auto mb-4 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">富士山コンパス</h1>
-          <p className="text-gray-600 text-sm">どこにいても富士山の方角がわかる</p>
-        </div>
+      {!arMode ? (
+        // 通常モード
+        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+          <div className="text-center mb-8">
+            <button 
+              onClick={toggleArMode}
+              className="mx-auto mb-4 cursor-pointer hover:scale-110 transition-transform"
+            >
+              <Mountain className="w-16 h-16 text-blue-600" />
+            </button>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">富士山コンパス</h1>
+            <p className="text-gray-600 text-sm">どこにいても富士山の方角がわかる</p>
+          </div>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 text-sm">
@@ -223,8 +267,69 @@ function FujiCompass() {
         <div className="mt-6 text-center text-xs text-gray-500">
           <p>スマートフォンを水平に持って</p>
           <p>矢印の方向に富士山があります</p>
+          <p className="mt-2 text-blue-600">💡 山のアイコンをタップでARモード</p>
         </div>
       </div>
+      ) : (
+        // ARモード
+        <div className="relative w-full h-screen">
+          <video
+            id="ar-video"
+            autoPlay
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          
+          {/* AR オーバーレイ */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {/* 矢印 */}
+            <div
+              className="transition-transform duration-300 ease-out mb-8"
+              style={{ transform: `rotate(${arrowRotation}deg)` }}
+            >
+              <Navigation className="w-32 h-32 text-red-500 drop-shadow-2xl" fill="currentColor" />
+            </div>
+            
+            {/* 情報パネル */}
+            {distance && (
+              <div className="bg-black bg-opacity-70 text-white rounded-2xl px-6 py-4 backdrop-blur-sm">
+                <div className="text-center">
+                  <div className="text-4xl font-bold mb-2">
+                    {distance.toFixed(1)} km
+                  </div>
+                  <div className="text-sm opacity-80">
+                    富士山まで {bearing.toFixed(0)}°
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* 閉じるボタン */}
+          <button
+            onClick={toggleArMode}
+            className="absolute top-4 right-4 bg-white bg-opacity-90 text-gray-800 rounded-full p-4 shadow-lg hover:bg-opacity-100 transition-all"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          {/* コンパス表示 */}
+          <div className="absolute top-4 left-4 w-24 h-24">
+            <div className="relative w-full h-full bg-white bg-opacity-90 rounded-full border-4 border-blue-400 shadow-lg">
+              <div
+                className="absolute inset-0 transition-transform duration-300 ease-out"
+                style={{ transform: `rotate(${-heading}deg)` }}
+              >
+                <div className="absolute top-1 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-700">
+                  N
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
