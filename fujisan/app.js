@@ -157,8 +157,8 @@ function FujiCompass() {
   );
 
   const Navigation = ({ className, fill }) => (
-    <svg className={className} viewBox="0 0 24 24" fill={fill || "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2 L12 22 M12 2 L8 6 M12 2 L16 6"/>
+    <svg className={className} viewBox="0 0 24 24" fill={fill || "currentColor"} stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2 L6 20 L12 16 L18 20 Z"/>
     </svg>
   );
 
