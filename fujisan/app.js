@@ -126,13 +126,14 @@ function FujiCompass() {
     while (angleDiff < -180) angleDiff += 360;
     
     // 角度差に応じて位置を計算
-    // -90〜90度の範囲で水平位置を決定（-90=左端、0=中央、90=右端）
-    const horizontalPos = Math.max(-90, Math.min(90, angleDiff));
-    const leftPercent = ((horizontalPos + 90) / 180) * 100;
+    // -60〜60度の範囲で水平位置を決定（範囲を狭めて中央寄りに）
+    const clampedAngle = Math.max(-60, Math.min(60, angleDiff));
+    // 15%〜85%の範囲に収める（矢印が見切れないように）
+    const leftPercent = ((clampedAngle + 60) / 120) * 70 + 15;
     
-    // 正面に近いほど上に、横や後ろなら水平に
-    const isNearFront = Math.abs(angleDiff) < 60;
-    const verticalPercent = isNearFront ? 40 : 50;
+    // 正面に近いほど上に、横や後ろなら中央に
+    const isNearFront = Math.abs(angleDiff) < 45;
+    const verticalPercent = isNearFront ? 35 : 50;
     
     // 矢印の回転角度（横向きの時は水平に）
     const rotation = isNearFront ? 0 : (angleDiff > 0 ? 90 : -90);
