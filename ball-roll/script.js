@@ -13,9 +13,9 @@ class BallGame {
         this.vy = 0;
         
         // 物理パラメータ
-        this.gravity = 0.5;      // 傾きに対する加速度
-        this.friction = 0.98;    // 摩擦係数
-        this.bounce = 0.6;       // 反発係数
+        this.gravity = 0.5;
+        this.friction = 0.98;
+        this.bounce = 0.6;
         
         // ボールサイズ
         this.ballSize = 50;
@@ -30,9 +30,8 @@ class BallGame {
     }
     
     init() {
-        // 初期位置（中央）
-        this.x = (window.innerWidth - this.ballSize) / 2;
-        this.y = (window.innerHeight - this.ballSize) / 2;
+        // 初期位置（画面の真ん中）
+        this.centerBall();
         this.updateBallPosition();
         
         // スタートボタン
@@ -40,6 +39,13 @@ class BallGame {
         
         // リサイズ対応
         window.addEventListener('resize', () => this.handleResize());
+    }
+    
+    centerBall() {
+        const containerWidth = window.innerWidth - 8;  // border分
+        const containerHeight = window.innerHeight - 8;
+        this.x = (containerWidth - this.ballSize) / 2;
+        this.y = (containerHeight - this.ballSize) / 2;
     }
     
     async start() {
@@ -72,26 +78,38 @@ class BallGame {
     
     handleOrientation(event) {
         // gamma: 左右の傾き (-90 to 90)
+        //   左に傾ける → 負の値 → ボールは左へ
+        //   右に傾ける → 正の値 → ボールは右へ
+        
         // beta: 前後の傾き (-180 to 180)
+        //   水平時は約90度（画面が上向き）
+        //   スマホ上部を下げる → betaが小さくなる → ボールは上へ
+        //   スマホ下部を下げる → betaが大きくなる → ボールは下へ
         
-        // 水平に持った状態を基準にする
-        // gamma → X方向の移動
-        // beta → Y方向の移動（水平時は約0-90度）
+        let gamma = event.gamma || 0;
+        let beta = event.beta || 0;
         
-        let gamma = event.gamma || 0;  // 左右
-        let beta = event.beta || 0;    // 前後
-        
-        // 傾きを -30〜30 度の範囲に制限して正規化
+        // 傾きを制限
         gamma = Math.max(-30, Math.min(30, gamma));
-        beta = Math.max(-30, Math.min(30, beta - 45)); // 45度を水平とする
         
-        this.tiltX = gamma / 30;  // -1 to 1
-        this.tiltY = beta / 30;   // -1 to 1
+        // beta: 90度を水平基準として、そこからの差分を取る
+        let betaOffset = beta - 90;
+        betaOffset = Math.max(-30, Math.min(30, betaOffset));
+        
+        // 正規化 (-1 to 1)
+        // 左傾き → tiltX負 → ボール左へ
+        // 右傾き → tiltX正 → ボール右へ
+        this.tiltX = gamma / 30;
+        
+        // 上部下げ → betaOffset負 → tiltY負 → ボール上へ
+        // 下部下げ → betaOffset正 → tiltY正 → ボール下へ
+        this.tiltY = betaOffset / 30;
         
         // デバッグ表示
         this.debug.innerHTML = `
             γ(左右): ${gamma.toFixed(1)}°<br>
-            β(前後): ${(event.beta || 0).toFixed(1)}°<br>
+            β(前後): ${beta.toFixed(1)}°<br>
+            βOffset: ${betaOffset.toFixed(1)}°<br>
             tiltX: ${this.tiltX.toFixed(2)}<br>
             tiltY: ${this.tiltY.toFixed(2)}
         `;
@@ -118,7 +136,7 @@ class BallGame {
         this.y += this.vy;
         
         // 壁との衝突判定
-        const maxX = window.innerWidth - this.ballSize - 8;  // border分
+        const maxX = window.innerWidth - this.ballSize - 8;
         const maxY = window.innerHeight - this.ballSize - 8;
         
         // 左壁
@@ -150,7 +168,6 @@ class BallGame {
     }
     
     handleResize() {
-        // 画面外に出ていたら調整
         const maxX = window.innerWidth - this.ballSize - 8;
         const maxY = window.innerHeight - this.ballSize - 8;
         
