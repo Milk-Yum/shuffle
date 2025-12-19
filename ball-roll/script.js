@@ -24,32 +24,31 @@ class BallGame {
         this.tiltX = 0;
         this.tiltY = 0;
         
+        // キャリブレーション用（スタート時のbeta値を基準にする）
+        this.baseBeta = null;
+        this.calibrationSamples = [];
+        
         this.isRunning = false;
         
         this.init();
     }
     
     init() {
-        // 初期位置（画面の真ん中）
         this.centerBall();
         this.updateBallPosition();
         
-        // スタートボタン
         this.startBtn.addEventListener('click', () => this.start());
-        
-        // リサイズ対応
         window.addEventListener('resize', () => this.handleResize());
     }
     
     centerBall() {
-        const containerWidth = window.innerWidth - 8;  // border分
+        const containerWidth = window.innerWidth - 8;
         const containerHeight = window.innerHeight - 8;
         this.x = (containerWidth - this.ballSize) / 2;
         this.y = (containerHeight - this.ballSize) / 2;
     }
     
     async start() {
-        // iOS 13+ では許可が必要
         if (typeof DeviceOrientationEvent !== 'undefined' && 
             typeof DeviceOrientationEvent.requestPermission === 'function') {
             try {
@@ -65,6 +64,36 @@ class BallGame {
             }
         }
         
+        // ボタンテキストを変更
+        this.startBtn.textContent = 'キャリブレーション中...';
+        this.startBtn.disabled = true;
+        
+        // キャリブレーション開始
+        this.calibrationSamples = [];
+        
+        const calibrationHandler = (e) => {
+            if (e.beta !== null) {
+                this.calibrationSamples.push(e.beta);
+            }
+        };
+        
+        window.addEventListener('deviceorientation', calibrationHandler);
+        
+        // 1秒間サンプル収集
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        window.removeEventListener('deviceorientation', calibrationHandler);
+        
+        // 平均値を基準に
+        if (this.calibrationSamples.length > 0) {
+            const sum = this.calibrationSamples.reduce((a, b) => a + b, 0);
+            this.baseBeta = sum / this.calibrationSamples.length;
+        } else {
+            this.baseBeta = 0;
+        }
+        
+        console.log('Calibrated baseBeta:', this.baseBeta);
+        
         // 傾きイベント登録
         window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
         
@@ -77,39 +106,26 @@ class BallGame {
     }
     
     handleOrientation(event) {
-        // gamma: 左右の傾き (-90 to 90)
-        //   左に傾ける → 負の値 → ボールは左へ
-        //   右に傾ける → 正の値 → ボールは右へ
-        
-        // beta: 前後の傾き (-180 to 180)
-        //   水平時は約90度（画面が上向き）
-        //   スマホ上部を下げる → betaが小さくなる → ボールは上へ
-        //   スマホ下部を下げる → betaが大きくなる → ボールは下へ
-        
         let gamma = event.gamma || 0;
         let beta = event.beta || 0;
         
         // 傾きを制限
         gamma = Math.max(-30, Math.min(30, gamma));
         
-        // beta: 90度を水平基準として、そこからの差分を取る
-        let betaOffset = beta - 90;
+        // キャリブレーション済みの基準値からの差分
+        let betaOffset = beta - this.baseBeta;
         betaOffset = Math.max(-30, Math.min(30, betaOffset));
         
         // 正規化 (-1 to 1)
-        // 左傾き → tiltX負 → ボール左へ
-        // 右傾き → tiltX正 → ボール右へ
         this.tiltX = gamma / 30;
-        
-        // 上部下げ → betaOffset負 → tiltY負 → ボール上へ
-        // 下部下げ → betaOffset正 → tiltY正 → ボール下へ
         this.tiltY = betaOffset / 30;
         
         // デバッグ表示
         this.debug.innerHTML = `
-            γ(左右): ${gamma.toFixed(1)}°<br>
-            β(前後): ${beta.toFixed(1)}°<br>
+            基準β: ${this.baseBeta.toFixed(1)}°<br>
+            現在β: ${beta.toFixed(1)}°<br>
             βOffset: ${betaOffset.toFixed(1)}°<br>
+            γ(左右): ${gamma.toFixed(1)}°<br>
             tiltX: ${this.tiltX.toFixed(2)}<br>
             tiltY: ${this.tiltY.toFixed(2)}
         `;
@@ -123,38 +139,30 @@ class BallGame {
     }
     
     update() {
-        // 傾きに応じて加速
         this.vx += this.tiltX * this.gravity;
         this.vy += this.tiltY * this.gravity;
         
-        // 摩擦を適用
         this.vx *= this.friction;
         this.vy *= this.friction;
         
-        // 位置を更新
         this.x += this.vx;
         this.y += this.vy;
         
-        // 壁との衝突判定
         const maxX = window.innerWidth - this.ballSize - 8;
         const maxY = window.innerHeight - this.ballSize - 8;
         
-        // 左壁
         if (this.x < 0) {
             this.x = 0;
             this.vx = -this.vx * this.bounce;
         }
-        // 右壁
         if (this.x > maxX) {
             this.x = maxX;
             this.vx = -this.vx * this.bounce;
         }
-        // 上壁
         if (this.y < 0) {
             this.y = 0;
             this.vy = -this.vy * this.bounce;
         }
-        // 下壁
         if (this.y > maxY) {
             this.y = maxY;
             this.vy = -this.vy * this.bounce;
@@ -177,7 +185,6 @@ class BallGame {
     }
 }
 
-// 起動
 document.addEventListener('DOMContentLoaded', () => {
     new BallGame();
 });
