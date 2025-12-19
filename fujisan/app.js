@@ -9,6 +9,12 @@ function FujiCompass() {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [arMode, setArMode] = useState(false);
   const [stream, setStream] = useState(null);
+  
+  // 累積角度（一回転防止用）
+  const [cumulativeHeading, setCumulativeHeading] = useState(0);
+  const [cumulativeArrow, setCumulativeArrow] = useState(0);
+  const [prevHeading, setPrevHeading] = useState(null);
+  const [prevArrow, setPrevArrow] = useState(null);
 
   // 富士山の座標
   const FUJI_LAT = 35.3606;
@@ -99,6 +105,18 @@ function FujiCompass() {
     }
     if (alpha !== null) {
       setHeading(alpha);
+      
+      // 累積角度を計算（一回転防止）
+      if (prevHeading !== null) {
+        let diff = alpha - prevHeading;
+        // 境界を越えた場合の補正
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+        setCumulativeHeading(prev => prev + diff);
+      } else {
+        setCumulativeHeading(alpha);
+      }
+      setPrevHeading(alpha);
     }
   };
 
@@ -112,13 +130,25 @@ function FujiCompass() {
     };
   }, [stream]);
 
-  // 矢印の回転角度を計算（最短経路）
+  // 矢印の回転角度を計算（累積角度方式）
   const calculateArrowRotation = () => {
     let rotation = bearing - heading;
     // -180から180の範囲に正規化
     while (rotation > 180) rotation -= 360;
     while (rotation < -180) rotation += 360;
-    return rotation;
+    
+    // 累積角度を更新
+    if (prevArrow !== null) {
+      let diff = rotation - prevArrow;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      setCumulativeArrow(prev => prev + diff);
+    } else {
+      setCumulativeArrow(rotation);
+    }
+    setPrevArrow(rotation);
+    
+    return cumulativeArrow;
   };
 
   const arrowRotation = calculateArrowRotation();
@@ -212,7 +242,7 @@ function FujiCompass() {
                 {/* 方位記号（回転する） */}
                 <div
                   className="absolute inset-0 transition-transform duration-300 ease-out"
-                  style={{ transform: `rotate(${-heading}deg)` }}
+                  style={{ transform: `rotate(${-cumulativeHeading}deg)` }}
                 >
                   <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-600">
                     N
@@ -276,7 +306,7 @@ function FujiCompass() {
           <p>スマートフォンを水平に持って</p>
           <p>矢印の方向に富士山があります</p>
           <p className="mt-2 text-blue-600">💡 山のアイコンをタップでARモード</p>
-          <p className="mt-3 text-gray-400">v23</p>
+          <p className="mt-3 text-gray-400">v24</p>
         </div>
       </div>
       ) : (
@@ -357,7 +387,7 @@ function FujiCompass() {
               }}>
                 <div
                   className="absolute inset-0 transition-transform duration-300 ease-out"
-                  style={{ transform: `rotate(${-heading}deg)` }}
+                  style={{ transform: `rotate(${-cumulativeHeading}deg)` }}
                 >
                   <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-sm font-bold text-red-600">
                     N
