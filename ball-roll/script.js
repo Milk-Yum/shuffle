@@ -306,4 +306,9 @@ class BallGame {
         this.x = Math.max(0, Math.min(this.x, maxX));
         this.y = Math.max(0, Math.min(this.y, maxY));
         this.updateBallPosition();
-    
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    new BallGame();
+});
