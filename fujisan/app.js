@@ -241,16 +241,16 @@ function FujiCompass() {
                   className="absolute inset-0 transition-transform duration-300 ease-out"
                   style={{ transform: `rotate(${-headingAccumulator.current}deg)` }}
                 >
-                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-600">
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xl font-bold text-gray-600">
                     N
                   </div>
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-400">
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xl font-bold text-gray-400">
                     S
                   </div>
-                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xl font-bold text-gray-400">
                     W
                   </div>
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-bold text-gray-400">
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xl font-bold text-gray-400">
                     E
                   </div>
                 </div>
@@ -303,7 +303,7 @@ function FujiCompass() {
           <p>スマートフォンを水平に持って</p>
           <p>矢印の方向に富士山があります</p>
           <p className="mt-2 text-blue-600">💡 山のアイコンをタップでARモード</p>
-          <p className="mt-3 text-gray-400">v25</p>
+          <p className="mt-3 text-gray-400">v26</p>
         </div>
       </div>
       ) : (
