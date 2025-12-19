@@ -3,7 +3,6 @@ const { useState, useEffect } = React;
 function FujiCompass() {
   const [position, setPosition] = useState(null);
   const [heading, setHeading] = useState(0);
-  const [prevHeading, setPrevHeading] = useState(0);
   const [bearing, setBearing] = useState(0);
   const [distance, setDistance] = useState(null);
   const [error, setError] = useState('');
@@ -101,19 +100,7 @@ function FujiCompass() {
       alpha = 360 - alpha;
     }
     if (alpha !== null) {
-      // 最短経路で角度を更新
-      let newHeading = alpha;
-      if (prevHeading !== 0) {
-        let diff = newHeading - prevHeading;
-        // 角度差が180度を超える場合は逆回りの方が近い
-        if (diff > 180) {
-          newHeading -= 360;
-        } else if (diff < -180) {
-          newHeading += 360;
-        }
-      }
-      setPrevHeading(alpha);
-      setHeading(newHeading);
+      setHeading(alpha);
     }
   };
 
