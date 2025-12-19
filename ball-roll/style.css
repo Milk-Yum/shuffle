@@ -39,8 +39,8 @@ html, body {
 }
 
 #hole {
-    width: 60px;
-    height: 60px;
+    width: 80px;
+    height: 80px;
     background: radial-gradient(circle, #000 0%, #000 60%, #333 80%, #666 100%);
     border-radius: 50%;
     position: absolute;
