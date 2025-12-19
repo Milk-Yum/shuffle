@@ -91,8 +91,6 @@ function FujiCompass() {
 
   const handleOrientation = (event) => {
     let alpha = event.alpha;
-    const beta = event.beta;   // 前後の傾き
-    const gamma = event.gamma; // 左右の傾き
     
     if (event.webkitCompassHeading) {
       alpha = event.webkitCompassHeading;
@@ -108,7 +106,6 @@ function FujiCompass() {
     return () => {
       window.removeEventListener('deviceorientationabsolute', handleOrientation);
       window.removeEventListener('deviceorientation', handleOrientation);
-      // カメラストリームのクリーンアップ
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
