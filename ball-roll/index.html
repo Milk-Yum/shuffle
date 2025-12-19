@@ -8,10 +8,20 @@
 </head>
 <body>
     <div id="container">
+        <div id="hole"></div>
         <div id="ball"></div>
+        <div id="timer">0.00</div>
         <div id="start-overlay">
             <button id="start-btn">タップしてスタート</button>
             <p>スマホを水平に持って傾けてください</p>
+        </div>
+        <div id="result-overlay" class="hidden">
+            <div id="result-content">
+                <h2>落ちた！</h2>
+                <p id="result-time"></p>
+                <p id="best-time"></p>
+                <button id="retry-btn">もう一度</button>
+            </div>
         </div>
         <div id="debug"></div>
     </div>
