@@ -1,9 +1,15 @@
 class BallGame {
     constructor() {
         this.ball = document.getElementById('ball');
+        this.hole = document.getElementById('hole');
         this.container = document.getElementById('container');
         this.startOverlay = document.getElementById('start-overlay');
+        this.resultOverlay = document.getElementById('result-overlay');
         this.startBtn = document.getElementById('start-btn');
+        this.retryBtn = document.getElementById('retry-btn');
+        this.timerDisplay = document.getElementById('timer');
+        this.resultTime = document.getElementById('result-time');
+        this.bestTimeDisplay = document.getElementById('best-time');
         this.debug = document.getElementById('debug');
         
         // ボールの状態
@@ -12,32 +18,46 @@ class BallGame {
         this.vx = 0;
         this.vy = 0;
         
+        // 穴の位置
+        this.holeX = 0;
+        this.holeY = 0;
+        
+        // サイズ
+        this.ballSize = 50;
+        this.holeSize = 60;
+        
         // 物理パラメータ
         this.gravity = 0.5;
         this.friction = 0.98;
         this.bounce = 0.6;
         
-        // ボールサイズ
-        this.ballSize = 50;
-        
         // 傾きデータ
         this.tiltX = 0;
         this.tiltY = 0;
         
-        // キャリブレーション用（スタート時のbeta値を基準にする）
+        // キャリブレーション
         this.baseBeta = null;
         this.calibrationSamples = [];
         
+        // タイマー
+        this.startTime = 0;
+        this.elapsedTime = 0;
+        this.bestTime = this.loadBestTime();
+        
         this.isRunning = false;
+        this.isFallen = false;
         
         this.init();
     }
     
     init() {
         this.centerBall();
+        this.placeHoleRandomly();
         this.updateBallPosition();
+        this.updateHolePosition();
         
         this.startBtn.addEventListener('click', () => this.start());
+        this.retryBtn.addEventListener('click', () => this.retry());
         window.addEventListener('resize', () => this.handleResize());
     }
     
@@ -46,6 +66,44 @@ class BallGame {
         const containerHeight = window.innerHeight - 8;
         this.x = (containerWidth - this.ballSize) / 2;
         this.y = (containerHeight - this.ballSize) / 2;
+    }
+    
+    placeHoleRandomly() {
+        const margin = 80;
+        const containerWidth = window.innerWidth - 8;
+        const containerHeight = window.innerHeight - 8;
+        
+        let attempts = 0;
+        do {
+            this.holeX = margin + Math.random() * (containerWidth - this.holeSize - margin * 2);
+            this.holeY = margin + Math.random() * (containerHeight - this.holeSize - margin * 2);
+            attempts++;
+        } while (this.getDistanceToHole() < 150 && attempts < 50);
+    }
+    
+    updateHolePosition() {
+        this.hole.style.left = this.holeX + 'px';
+        this.hole.style.top = this.holeY + 'px';
+    }
+    
+    getDistanceToHole() {
+        const ballCenterX = this.x + this.ballSize / 2;
+        const ballCenterY = this.y + this.ballSize / 2;
+        const holeCenterX = this.holeX + this.holeSize / 2;
+        const holeCenterY = this.holeY + this.holeSize / 2;
+        
+        const dx = ballCenterX - holeCenterX;
+        const dy = ballCenterY - holeCenterY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    loadBestTime() {
+        const saved = localStorage.getItem('ballGame_bestTime');
+        return saved ? parseFloat(saved) : null;
+    }
+    
+    saveBestTime(time) {
+        localStorage.setItem('ballGame_bestTime', time.toString());
     }
     
     async start() {
@@ -64,11 +122,9 @@ class BallGame {
             }
         }
         
-        // ボタンテキストを変更
         this.startBtn.textContent = 'キャリブレーション中...';
         this.startBtn.disabled = true;
         
-        // キャリブレーション開始
         this.calibrationSamples = [];
         
         const calibrationHandler = (e) => {
@@ -79,12 +135,10 @@ class BallGame {
         
         window.addEventListener('deviceorientation', calibrationHandler);
         
-        // 1秒間サンプル収集
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         window.removeEventListener('deviceorientation', calibrationHandler);
         
-        // 平均値を基準に
         if (this.calibrationSamples.length > 0) {
             const sum = this.calibrationSamples.reduce((a, b) => a + b, 0);
             this.baseBeta = sum / this.calibrationSamples.length;
@@ -92,42 +146,57 @@ class BallGame {
             this.baseBeta = 0;
         }
         
-        console.log('Calibrated baseBeta:', this.baseBeta);
-        
-        // 傾きイベント登録
         window.addEventListener('deviceorientation', (e) => this.handleOrientation(e));
         
-        // オーバーレイを隠す
         this.startOverlay.classList.add('hidden');
         
-        // ゲームループ開始
+        this.startTime = performance.now();
+        
         this.isRunning = true;
+        this.isFallen = false;
+        this.gameLoop();
+    }
+    
+    retry() {
+        this.resultOverlay.classList.add('hidden');
+        this.ball.classList.remove('falling');
+        
+        this.centerBall();
+        this.placeHoleRandomly();
+        this.updateBallPosition();
+        this.updateHolePosition();
+        
+        this.vx = 0;
+        this.vy = 0;
+        
+        this.startTime = performance.now();
+        this.timerDisplay.textContent = '0.00';
+        
+        this.isRunning = true;
+        this.isFallen = false;
         this.gameLoop();
     }
     
     handleOrientation(event) {
+        if (!this.isRunning) return;
+        
         let gamma = event.gamma || 0;
         let beta = event.beta || 0;
         
-        // 傾きを制限
         gamma = Math.max(-30, Math.min(30, gamma));
         
-        // キャリブレーション済みの基準値からの差分
         let betaOffset = beta - this.baseBeta;
         betaOffset = Math.max(-30, Math.min(30, betaOffset));
         
-        // 正規化 (-1 to 1)
         this.tiltX = gamma / 30;
         this.tiltY = betaOffset / 30;
         
-        // デバッグ表示
         this.debug.innerHTML = `
             基準β: ${this.baseBeta.toFixed(1)}°<br>
             現在β: ${beta.toFixed(1)}°<br>
             βOffset: ${betaOffset.toFixed(1)}°<br>
             γ(左右): ${gamma.toFixed(1)}°<br>
-            tiltX: ${this.tiltX.toFixed(2)}<br>
-            tiltY: ${this.tiltY.toFixed(2)}
+            穴まで: ${this.getDistanceToHole().toFixed(0)}px
         `;
     }
     
@@ -135,7 +204,62 @@ class BallGame {
         if (!this.isRunning) return;
         
         this.update();
+        this.updateTimer();
+        this.checkHole();
+        
         requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    updateTimer() {
+        this.elapsedTime = (performance.now() - this.startTime) / 1000;
+        this.timerDisplay.textContent = this.elapsedTime.toFixed(2);
+    }
+    
+    checkHole() {
+        const distance = this.getDistanceToHole();
+        const fallThreshold = (this.holeSize - this.ballSize) / 2 + 10;
+        
+        if (distance < fallThreshold) {
+            this.fallIntoHole();
+        }
+    }
+    
+    fallIntoHole() {
+        this.isRunning = false;
+        this.isFallen = true;
+        
+        const holeCenterX = this.holeX + (this.holeSize - this.ballSize) / 2;
+        const holeCenterY = this.holeY + (this.holeSize - this.ballSize) / 2;
+        this.x = holeCenterX;
+        this.y = holeCenterY;
+        this.updateBallPosition();
+        
+        this.ball.classList.add('falling');
+        
+        setTimeout(() => {
+            this.showResult();
+        }, 500);
+    }
+    
+    showResult() {
+        const time = this.elapsedTime;
+        let isNewBest = false;
+        
+        if (this.bestTime === null || time < this.bestTime) {
+            this.bestTime = time;
+            this.saveBestTime(time);
+            isNewBest = true;
+        }
+        
+        this.resultTime.textContent = time.toFixed(2) + ' 秒';
+        
+        if (isNewBest) {
+            this.bestTimeDisplay.textContent = '🎉 新記録！';
+        } else {
+            this.bestTimeDisplay.textContent = 'ベスト: ' + this.bestTime.toFixed(2) + ' 秒';
+        }
+        
+        this.resultOverlay.classList.remove('hidden');
     }
     
     update() {
