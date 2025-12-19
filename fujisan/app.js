@@ -36,6 +36,21 @@ function FujiCompass() {
     return R * c;
   };
 
+  // 角度の正規化（0-360度に収める）
+  const normalizeAngle = (angle) => {
+    while (angle < 0) angle += 360;
+    while (angle >= 360) angle -= 360;
+    return angle;
+  };
+
+  // 最短経路で角度差を計算
+  const getShortestAngleDiff = (from, to) => {
+    let diff = to - from;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    return diff;
+  };
+
   // 位置情報取得
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -50,6 +65,13 @@ function FujiCompass() {
         
         const bear = calculateBearing(latitude, longitude, FUJI_LAT, FUJI_LON);
         setBearing(bear);
+        
+        // bearingのスムーズ更新
+        setSmoothBearing(prev => {
+          if (prev === 0) return bear;
+          const diff = getShortestAngleDiff(prev, bear);
+          return normalizeAngle(prev + diff);
+        });
         
         const dist = calculateDistance(latitude, longitude, FUJI_LAT, FUJI_LON);
         setDistance(dist);
@@ -99,6 +121,13 @@ function FujiCompass() {
     }
     if (alpha !== null) {
       setHeading(alpha);
+      
+      // headingのスムーズ更新
+      setSmoothHeading(prev => {
+        if (prev === 0) return alpha;
+        const diff = getShortestAngleDiff(prev, alpha);
+        return normalizeAngle(prev + diff);
+      });
     }
   };
 
@@ -113,7 +142,8 @@ function FujiCompass() {
   }, [stream]);
 
   // 矢印の回転角度（富士山の方位 - デバイスの向き）
-  const arrowRotation = bearing - heading;
+  // スムーズな値を使用
+  const arrowRotation = smoothBearing - smoothHeading;
 
   // ARモード切り替え
   const toggleArMode = async () => {
@@ -204,7 +234,7 @@ function FujiCompass() {
                 {/* 方位記号（回転する） */}
                 <div
                   className="absolute inset-0 transition-transform duration-300 ease-out"
-                  style={{ transform: `rotate(${-heading}deg)` }}
+                  style={{ transform: `rotate(${-smoothHeading}deg)` }}
                 >
                   <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-600">
                     N
@@ -268,7 +298,7 @@ function FujiCompass() {
           <p>スマートフォンを水平に持って</p>
           <p>矢印の方向に富士山があります</p>
           <p className="mt-2 text-blue-600">💡 山のアイコンをタップでARモード</p>
-          <p className="mt-3 text-gray-400">v21</p>
+          <p className="mt-3 text-gray-400">v22</p>
         </div>
       </div>
       ) : (
@@ -349,7 +379,7 @@ function FujiCompass() {
               }}>
                 <div
                   className="absolute inset-0 transition-transform duration-300 ease-out"
-                  style={{ transform: `rotate(${-heading}deg)` }}
+                  style={{ transform: `rotate(${-smoothHeading}deg)` }}
                 >
                   <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-sm font-bold text-red-600">
                     N
