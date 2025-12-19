@@ -268,6 +268,7 @@ function FujiCompass() {
           <p>スマートフォンを水平に持って</p>
           <p>矢印の方向に富士山があります</p>
           <p className="mt-2 text-blue-600">💡 山のアイコンをタップでARモード</p>
+          <p className="mt-3 text-gray-400">v21</p>
         </div>
       </div>
       ) : (
