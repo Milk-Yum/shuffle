@@ -24,7 +24,7 @@ class BallGame {
         
         // サイズ
         this.ballSize = 50;
-        this.holeSize = 80;
+        this.holeSize = 70;
         
         // 物理パラメータ
         this.gravity = 0.5;
@@ -217,7 +217,8 @@ class BallGame {
     
     checkHole() {
         const distance = this.getDistanceToHole();
-        const fallThreshold = (this.holeSize - this.ballSize) / 2 + 10;
+        // 球の中心が穴の中心にほぼ重なったら落ちる
+        const fallThreshold = 5;
         
         if (distance < fallThreshold) {
             this.fallIntoHole();
