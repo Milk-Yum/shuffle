@@ -1,4 +1,4 @@
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 function FujiCompass() {
   const [position, setPosition] = useState(null);
@@ -10,11 +10,11 @@ function FujiCompass() {
   const [arMode, setArMode] = useState(false);
   const [stream, setStream] = useState(null);
   
-  // 累積角度（一回転防止用）
-  const [cumulativeHeading, setCumulativeHeading] = useState(0);
-  const [cumulativeArrow, setCumulativeArrow] = useState(0);
-  const [prevHeading, setPrevHeading] = useState(null);
-  const [prevArrow, setPrevArrow] = useState(null);
+  // 累積角度を保持（useRefで無限ループ回避）
+  const headingAccumulator = useRef(0);
+  const arrowAccumulator = useRef(0);
+  const lastHeading = useRef(null);
+  const lastArrowBase = useRef(null);
 
   // 富士山の座標
   const FUJI_LAT = 35.3606;
@@ -104,19 +104,17 @@ function FujiCompass() {
       alpha = 360 - alpha;
     }
     if (alpha !== null) {
-      setHeading(alpha);
-      
-      // 累積角度を計算（一回転防止）
-      if (prevHeading !== null) {
-        let diff = alpha - prevHeading;
-        // 境界を越えた場合の補正
+      // 累積角度を計算
+      if (lastHeading.current !== null) {
+        let diff = alpha - lastHeading.current;
         if (diff > 180) diff -= 360;
         if (diff < -180) diff += 360;
-        setCumulativeHeading(prev => prev + diff);
+        headingAccumulator.current += diff;
       } else {
-        setCumulativeHeading(alpha);
+        headingAccumulator.current = alpha;
       }
-      setPrevHeading(alpha);
+      lastHeading.current = alpha;
+      setHeading(alpha);
     }
   };
 
@@ -130,28 +128,25 @@ function FujiCompass() {
     };
   }, [stream]);
 
-  // 矢印の回転角度を計算（累積角度方式）
-  const calculateArrowRotation = () => {
-    let rotation = bearing - heading;
-    // -180から180の範囲に正規化
-    while (rotation > 180) rotation -= 360;
-    while (rotation < -180) rotation += 360;
+  // 矢印の回転角度を計算
+  const getArrowRotation = () => {
+    let baseRotation = bearing - heading;
+    while (baseRotation > 180) baseRotation -= 360;
+    while (baseRotation < -180) baseRotation += 360;
     
-    // 累積角度を更新
-    if (prevArrow !== null) {
-      let diff = rotation - prevArrow;
+    // 累積角度を計算
+    if (lastArrowBase.current !== null) {
+      let diff = baseRotation - lastArrowBase.current;
       if (diff > 180) diff -= 360;
       if (diff < -180) diff += 360;
-      setCumulativeArrow(prev => prev + diff);
+      arrowAccumulator.current += diff;
     } else {
-      setCumulativeArrow(rotation);
+      arrowAccumulator.current = baseRotation;
     }
-    setPrevArrow(rotation);
+    lastArrowBase.current = baseRotation;
     
-    return cumulativeArrow;
+    return arrowAccumulator.current;
   };
-
-  const arrowRotation = calculateArrowRotation();
 
   // ARモード切り替え
   const toggleArMode = async () => {
@@ -204,6 +199,8 @@ function FujiCompass() {
     </svg>
   );
 
+  const arrowRotation = getArrowRotation();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-400 to-blue-200 flex flex-col items-center justify-center p-4">
       {!arMode ? (
@@ -242,7 +239,7 @@ function FujiCompass() {
                 {/* 方位記号（回転する） */}
                 <div
                   className="absolute inset-0 transition-transform duration-300 ease-out"
-                  style={{ transform: `rotate(${-cumulativeHeading}deg)` }}
+                  style={{ transform: `rotate(${-headingAccumulator.current}deg)` }}
                 >
                   <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-xs font-bold text-gray-600">
                     N
@@ -306,7 +303,7 @@ function FujiCompass() {
           <p>スマートフォンを水平に持って</p>
           <p>矢印の方向に富士山があります</p>
           <p className="mt-2 text-blue-600">💡 山のアイコンをタップでARモード</p>
-          <p className="mt-3 text-gray-400">v24</p>
+          <p className="mt-3 text-gray-400">v25</p>
         </div>
       </div>
       ) : (
@@ -387,7 +384,7 @@ function FujiCompass() {
               }}>
                 <div
                   className="absolute inset-0 transition-transform duration-300 ease-out"
-                  style={{ transform: `rotate(${-cumulativeHeading}deg)` }}
+                  style={{ transform: `rotate(${-headingAccumulator.current}deg)` }}
                 >
                   <div className="absolute top-2 left-1/2 transform -translate-x-1/2 text-sm font-bold text-red-600">
                     N
