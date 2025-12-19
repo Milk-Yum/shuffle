@@ -12,34 +12,27 @@ class BallGame {
         this.bestTimeDisplay = document.getElementById('best-time');
         this.debug = document.getElementById('debug');
         
-        // ボールの状態
         this.x = 0;
         this.y = 0;
         this.vx = 0;
         this.vy = 0;
         
-        // 穴の位置
         this.holeX = 0;
         this.holeY = 0;
         
-        // サイズ
         this.ballSize = 50;
         this.holeSize = 60;
         
-        // 物理パラメータ
         this.gravity = 0.5;
         this.friction = 0.98;
         this.bounce = 0.6;
         
-        // 傾きデータ
         this.tiltX = 0;
         this.tiltY = 0;
         
-        // キャリブレーション
         this.baseBeta = null;
         this.calibrationSamples = [];
         
-        // タイマー
         this.startTime = 0;
         this.elapsedTime = 0;
         this.bestTime = this.loadBestTime();
@@ -217,7 +210,9 @@ class BallGame {
     
     checkHole() {
         const distance = this.getDistanceToHole();
-        const fallThreshold = (this.holeSize - this.ballSize) / 2 + 10;
+        
+        // 球の中心が穴の中心から5px以内に入ったら落ちる
+        const fallThreshold = 5;
         
         if (distance < fallThreshold) {
             this.fallIntoHole();
