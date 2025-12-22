@@ -2,7 +2,10 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>割り算トレーニング</title>
     <style>
         * {
@@ -19,12 +22,20 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
         }
 
         #gameContainer {
             width: 100%;
             max-width: 400px;
             height: 100vh;
+            height: 100dvh;
             background: white;
             position: relative;
             overflow: hidden;
