@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>割り算トレーニング</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            width: 100%;
+            max-width: 400px;
+            height: 100vh;
+            background: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+        }
+
+        #gameArea {
+            width: 100%;
+            height: calc(100vh - 200px);
+            position: relative;
+            background: linear-gradient(to bottom, #f0f4ff 0%, #e8f0ff 100%);
+        }
+
+        .falling-number {
+            position: absolute;
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            transition: top 0.05s linear;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #bottomBox {
+            position: absolute;
+            bottom: 200px;
+            left: 20px;
+            width: 80px;
+            height: 80px;
+            background: #ff6b6b;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 36px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255,107,107,0.4);
+        }
+
+        #controlPanel {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            background: white;
+            border-top: 3px solid #667eea;
+            padding: 20px;
+        }
+
+        #scoreBoard {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #inputArea {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #answerInput {
+            flex: 1;
+            font-size: 24px;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        #submitBtn {
+            padding: 12px 30px;
+            font-size: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(102,126,234,0.3);
+        }
+
+        #submitBtn:active {
+            transform: scale(0.95);
+        }
+
+        #numberPad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .number-btn {
+            padding: 15px;
+            font-size: 24px;
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .number-btn:active {
+            background: #667eea;
+            color: white;
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            display: none;
+            z-index: 1000;
+        }
+
+        #gameOver h2 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+
+        #gameOver p {
+            font-size: 20px;
+            margin: 10px 0;
+            color: #333;
+        }
+
+        #restartBtn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .correct-effect {
+            animation: correctPulse 0.3s ease;
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="gameArea">
+            <div id="bottomBox">?</div>
+        </div>
+        <div id="controlPanel">
+            <div id="scoreBoard">
+                <span>スコア: <span id="score">0</span></span>
+                <span>連続: <span id="combo">0</span></span>
+            </div>
+            <div id="inputArea">
+                <input type="number" id="answerInput" placeholder="答え" readonly>
+                <button id="submitBtn">OK</button>
+            </div>
+            <div id="numberPad">
+                <button class="number-btn" data-num="1">1</button>
+                <button class="number-btn" data-num="2">2</button>
+                <button class="number-btn" data-num="3">3</button>
+                <button class="number-btn" data-num="4">4</button>
+                <button class="number-btn" data-num="5">5</button>
+                <button class="number-btn" data-num="6">6</button>
+                <button class="number-btn" data-num="7">7</button>
+                <button class="number-btn" data-num="8">8</button>
+                <button class="number-btn" data-num="9">9</button>
+                <button class="number-btn" data-num="0">0</button>
+                <button class="number-btn" data-num="clear">×</button>
+            </div>
+        </div>
+        <div id="gameOver">
+            <h2>ゲームオーバー！</h2>
+            <p>スコア: <span id="finalScore">0</span></p>
+            <p>最高連続: <span id="maxCombo">0</span></p>
+            <button id="restartBtn">もう一度</button>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const bottomBox = document.getElementById('bottomBox');
+        const answerInput = document.getElementById('answerInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const scoreDisplay = document.getElementById('score');
+        const comboDisplay = document.getElementById('combo');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const maxComboDisplay = document.getElementById('maxCombo');
+        const restartBtn = document.getElementById('restartBtn');
+
+        let score = 0;
+        let combo = 0;
+        let maxCombo = 0;
+        let currentDivisor = 0;
+        let currentDividend = 0;
+        let fallingElement = null;
+        let gameRunning = false;
+        let fallInterval = null;
+        let currentTop = 0;
+
+        const FALL_SPEED = 1; // ピクセル/フレーム
+        const FRAME_RATE = 30; // フレーム/秒
+
+        function generateProblem() {
+            // 2-9の数字を割る数として選択
+            currentDivisor = Math.floor(Math.random() * 8) + 2;
+            bottomBox.textContent = currentDivisor;
+
+            // 答えが1-12になるような割られる数を生成
+            const answer = Math.floor(Math.random() * 12) + 1;
+            currentDividend = currentDivisor * answer;
+
+            // 落ちてくる数字を作成
+            if (fallingElement) {
+                fallingElement.remove();
+            }
+            fallingElement = document.createElement('div');
+            fallingElement.className = 'falling-number';
+            fallingElement.textContent = currentDividend;
+            currentTop = 0;
+            fallingElement.style.top = '20px';
+            gameArea.appendChild(fallingElement);
+
+            answerInput.value = '';
+        }
+
+        function startFalling() {
+            if (fallInterval) clearInterval(fallInterval);
+            
+            fallInterval = setInterval(() => {
+                if (!gameRunning) return;
+                
+                currentTop += FALL_SPEED;
+                fallingElement.style.top = currentTop + 'px';
+
+                // ゲームエリアの高さ - bottomBoxの位置までで判定
+                const gameAreaHeight = gameArea.offsetHeight - 100;
+                if (currentTop >= gameAreaHeight) {
+                    endGame();
+                }
+            }, 1000 / FRAME_RATE);
+        }
+
+        function checkAnswer() {
+            const userAnswer = parseInt(answerInput.value);
+            const correctAnswer = currentDividend / currentDivisor;
+
+            if (userAnswer === correctAnswer) {
+                score += 10 + combo;
+                combo++;
+                if (combo > maxCombo) maxCombo = combo;
+                
+                scoreDisplay.textContent = score;
+                comboDisplay.textContent = combo;
+
+                bottomBox.classList.add('correct-effect');
+                setTimeout(() => bottomBox.classList.remove('correct-effect'), 300);
+
+                generateProblem();
+                startFalling();
+            } else {
+                combo = 0;
+                comboDisplay.textContent = combo;
+            }
+        }
+
+        function endGame() {
+            gameRunning = false;
+            if (fallInterval) clearInterval(fallInterval);
+            
+            finalScoreDisplay.textContent = score;
+            maxComboDisplay.textContent = maxCombo;
+            gameOverScreen.style.display = 'block';
+        }
+
+        function startGame() {
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            gameRunning = true;
+            
+            scoreDisplay.textContent = score;
+            comboDisplay.textContent = combo;
+            gameOverScreen.style.display = 'none';
+            
+            generateProblem();
+            startFalling();
+        }
+
+        // 数字パッドのイベント
+        document.querySelectorAll('.number-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const num = btn.dataset.num;
+                if (num === 'clear') {
+                    answerInput.value = '';
+                } else {
+                    answerInput.value += num;
+                }
+            });
+        });
+
+        submitBtn.addEventListener('click', () => {
+            if (gameRunning && answerInput.value) {
+                checkAnswer();
+            }
+        });
+
+        answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && gameRunning && answerInput.value) {
+                checkAnswer();
+            }
+        });
+
+        restartBtn.addEventListener('click', startGame);
+
+        // ゲーム開始
+        startGame();
+    </script>
+</body>
+</html>
