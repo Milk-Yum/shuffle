@@ -18,6 +18,7 @@
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             height: 100vh;
+            height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -42,10 +43,78 @@
             box-shadow: 0 10px 50px rgba(0,0,0,0.3);
         }
 
+        #titleScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 40px;
+        }
+
+        #titleScreen.hidden {
+            display: none;
+        }
+
+        #titleScreen h1 {
+            font-size: 36px;
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            line-height: 1.3;
+            text-align: center;
+        }
+
+        #titleScreen p {
+            font-size: 18px;
+            color: white;
+            margin-bottom: 40px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .stats-box {
+            background: rgba(255,255,255,0.2);
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-box p {
+            font-size: 20px;
+            margin: 10px 0;
+            color: white;
+            font-weight: bold;
+        }
+
+        #startBtn {
+            padding: 20px 60px;
+            font-size: 24px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+
+        #startBtn:active {
+            transform: scale(0.95);
+        }
+
         #gameArea {
             width: 100%;
-            height: calc(100vh - 320px);
-            height: calc(100dvh - 320px);
+            height: calc(100vh - 370px);
+            height: calc(100dvh - 370px);
             position: relative;
             background: linear-gradient(to bottom, #f0f4ff 0%, #e8f0ff 100%);
         }
@@ -61,9 +130,13 @@
             transform: translateX(-50%);
         }
 
+        .falling-number.hidden {
+            visibility: hidden;
+        }
+
         #bottomBox {
             position: absolute;
-            bottom: 320px;
+            bottom: 370px;
             left: 20px;
             width: 80px;
             height: 80px;
@@ -78,14 +151,19 @@
             box-shadow: 0 4px 15px rgba(255,107,107,0.4);
         }
 
+        #bottomBox.hidden {
+            visibility: hidden;
+        }
+
         #controlPanel {
             position: absolute;
             bottom: 0;
             width: 100%;
-            height: 320px;
+            height: 370px;
             background: white;
             border-top: 3px solid #667eea;
             padding: 15px;
+            padding-bottom: 65px;
             display: flex;
             flex-direction: column;
         }
@@ -114,22 +192,51 @@
             border: 2px solid #667eea;
             border-radius: 8px;
             text-align: center;
+            height: 44px;
         }
 
-        #submitBtn {
-            padding: 10px 25px;
-            font-size: 18px;
-            background: #667eea;
+        #pauseBtn {
+            width: 60px;
+            height: 44px;
+            background: #ffa500;
             color: white;
             border: none;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(102,126,234,0.3);
+            box-shadow: 0 4px 10px rgba(255,165,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            flex-shrink: 0;
         }
 
-        #submitBtn:active {
+        #pauseBtn:active {
             transform: scale(0.95);
+        }
+
+        .pause-icon, .play-icon {
+            display: flex;
+            gap: 4px;
+        }
+
+        .pause-icon::before,
+        .pause-icon::after {
+            content: '';
+            width: 5px;
+            height: 20px;
+            background: white;
+            border-radius: 2px;
+        }
+
+        .play-icon {
+            width: 0;
+            height: 0;
+            border-left: 15px solid white;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            margin-left: 3px;
         }
 
         #numberPad {
@@ -195,6 +302,59 @@
             font-weight: bold;
         }
 
+        #pauseOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            z-index: 1500;
+            pointer-events: none;
+        }
+
+        #pauseOverlay.active {
+            display: block;
+            pointer-events: auto;
+        }
+
+        #pauseOverlay h2 {
+            color: white;
+            font-size: 48px;
+            text-align: center;
+            margin-top: 40%;
+        }
+
+        #resumeBtn {
+            width: 60px;
+            height: 44px;
+            background: #4CAF50;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(76,175,80,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            bottom: 305px;
+            right: 15px;
+        }
+
+        #resumeBtn:active {
+            transform: scale(0.95);
+        }
+
+        .resume-icon {
+            width: 0;
+            height: 0;
+            border-left: 20px solid white;
+            border-top: 12px solid transparent;
+            border-bottom: 12px solid transparent;
+            margin-left: 5px;
+        }
+
         .correct-effect {
             animation: correctPulse 0.3s ease;
         }
@@ -207,9 +367,20 @@
 </head>
 <body>
     <div id="gameContainer">
+        <div id="titleScreen">
+            <h1>割り算<br>トレーニング</h1>
+            <p>降ってくる数字は<br>ボックスの数字の何個分？</p>
+            <div class="stats-box">
+                <p>最高スコア: <span id="bestScore">0</span></p>
+                <p>最高連続: <span id="bestCombo">0</span></p>
+            </div>
+            <button id="startBtn">スタート</button>
+        </div>
+
         <div id="gameArea">
             <div id="bottomBox">?</div>
         </div>
+
         <div id="controlPanel">
             <div id="scoreBoard">
                 <span>スコア: <span id="score">0</span></span>
@@ -217,7 +388,9 @@
             </div>
             <div id="inputArea">
                 <input type="number" id="answerInput" placeholder="答え" readonly>
-                <button id="submitBtn">OK</button>
+                <button id="pauseBtn">
+                    <div class="pause-icon"></div>
+                </button>
             </div>
             <div id="numberPad">
                 <button class="number-btn" data-num="7">7</button>
@@ -234,6 +407,14 @@
                 <button class="number-btn" data-num="submit">OK</button>
             </div>
         </div>
+
+        <div id="pauseOverlay">
+            <h2>一時停止中</h2>
+            <button id="resumeBtn">
+                <div class="resume-icon"></div>
+            </button>
+        </div>
+
         <div id="gameOver">
             <h2>ゲームオーバー！</h2>
             <p>スコア: <span id="finalScore">0</span></p>
@@ -246,37 +427,65 @@
         const gameArea = document.getElementById('gameArea');
         const bottomBox = document.getElementById('bottomBox');
         const answerInput = document.getElementById('answerInput');
-        const submitBtn = document.getElementById('submitBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
         const scoreDisplay = document.getElementById('score');
         const comboDisplay = document.getElementById('combo');
         const gameOverScreen = document.getElementById('gameOver');
         const finalScoreDisplay = document.getElementById('finalScore');
         const maxComboDisplay = document.getElementById('maxCombo');
         const restartBtn = document.getElementById('restartBtn');
+        const titleScreen = document.getElementById('titleScreen');
+        const startBtn = document.getElementById('startBtn');
+        const bestScoreDisplay = document.getElementById('bestScore');
+        const bestComboDisplay = document.getElementById('bestCombo');
+        const pauseOverlay = document.getElementById('pauseOverlay');
 
         let score = 0;
         let combo = 0;
         let maxCombo = 0;
+        let bestScore = 0;
+        let bestCombo = 0;
         let currentDivisor = 0;
         let currentDividend = 0;
         let fallingElement = null;
         let gameRunning = false;
+        let isPaused = false;
         let fallInterval = null;
         let currentTop = 0;
 
-        const FALL_SPEED = 1; // ピクセル/フレーム
-        const FRAME_RATE = 30; // フレーム/秒
+        const FALL_SPEED = 1;
+        const FRAME_RATE = 30;
+
+        // ベストスコア読み込み
+        function loadBestScores() {
+            const savedBestScore = localStorage.getItem('warizanBestScore');
+            const savedBestCombo = localStorage.getItem('warizanBestCombo');
+            if (savedBestScore) bestScore = parseInt(savedBestScore);
+            if (savedBestCombo) bestCombo = parseInt(savedBestCombo);
+            bestScoreDisplay.textContent = bestScore;
+            bestComboDisplay.textContent = bestCombo;
+        }
+
+        // ベストスコア保存
+        function saveBestScores() {
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('warizanBestScore', bestScore);
+            }
+            if (maxCombo > bestCombo) {
+                bestCombo = maxCombo;
+                localStorage.setItem('warizanBestCombo', bestCombo);
+            }
+        }
 
         function generateProblem() {
-            // 2-9の数字を割る数として選択
             currentDivisor = Math.floor(Math.random() * 8) + 2;
             bottomBox.textContent = currentDivisor;
 
-            // 答えが1-12になるような割られる数を生成
             const answer = Math.floor(Math.random() * 12) + 1;
             currentDividend = currentDivisor * answer;
 
-            // 落ちてくる数字を作成
             if (fallingElement) {
                 fallingElement.remove();
             }
@@ -294,12 +503,11 @@
             if (fallInterval) clearInterval(fallInterval);
             
             fallInterval = setInterval(() => {
-                if (!gameRunning) return;
+                if (!gameRunning || isPaused) return;
                 
                 currentTop += FALL_SPEED;
                 fallingElement.style.top = currentTop + 'px';
 
-                // ゲームエリアの高さ - bottomBoxの位置までで判定
                 const gameAreaHeight = gameArea.offsetHeight - 100;
                 if (currentTop >= gameAreaHeight) {
                     endGame();
@@ -307,7 +515,24 @@
             }, 1000 / FRAME_RATE);
         }
 
+        function togglePause() {
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseBtn.innerHTML = '<div class="play-icon"></div>';
+                pauseOverlay.classList.add('active');
+                fallingElement.classList.add('hidden');
+                bottomBox.classList.add('hidden');
+            } else {
+                pauseBtn.innerHTML = '<div class="pause-icon"></div>';
+                pauseOverlay.classList.remove('active');
+                fallingElement.classList.remove('hidden');
+                bottomBox.classList.remove('hidden');
+            }
+        }
+
         function checkAnswer() {
+            if (isPaused) return;
+            
             const userAnswer = parseInt(answerInput.value);
             const correctAnswer = currentDividend / currentDivisor;
 
@@ -333,7 +558,10 @@
 
         function endGame() {
             gameRunning = false;
+            isPaused = false;
             if (fallInterval) clearInterval(fallInterval);
+            
+            saveBestScores();
             
             finalScoreDisplay.textContent = score;
             maxComboDisplay.textContent = maxCombo;
@@ -345,18 +573,29 @@
             combo = 0;
             maxCombo = 0;
             gameRunning = true;
+            isPaused = false;
             
             scoreDisplay.textContent = score;
             comboDisplay.textContent = combo;
             gameOverScreen.style.display = 'none';
+            titleScreen.classList.add('hidden');
+            pauseBtn.innerHTML = '<div class="pause-icon"></div>';
+            pauseOverlay.classList.remove('active');
             
             generateProblem();
             startFalling();
         }
 
-        // 数字パッドのイベント
+        function returnToTitle() {
+            loadBestScores();
+            titleScreen.classList.remove('hidden');
+        }
+
+        // イベントリスナー
         document.querySelectorAll('.number-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                if (isPaused) return;
+                
                 const num = btn.dataset.num;
                 if (num === 'clear') {
                     answerInput.value = '';
@@ -370,22 +609,23 @@
             });
         });
 
-        submitBtn.addEventListener('click', () => {
-            if (gameRunning && answerInput.value) {
-                checkAnswer();
-            }
-        });
+        pauseBtn.addEventListener('click', togglePause);
+        resumeBtn.addEventListener('click', togglePause);
 
         answerInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && gameRunning && answerInput.value) {
+            if (e.key === 'Enter' && gameRunning && answerInput.value && !isPaused) {
                 checkAnswer();
             }
         });
 
-        restartBtn.addEventListener('click', startGame);
+        startBtn.addEventListener('click', startGame);
 
-        // ゲーム開始
-        startGame();
+        restartBtn.addEventListener('click', () => {
+            returnToTitle();
+        });
+
+        // 初期化
+        loadBestScores();
     </script>
 </body>
 </html>
