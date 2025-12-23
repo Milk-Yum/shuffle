@@ -69,6 +69,7 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             line-height: 1.3;
             text-align: center;
+            cursor: pointer;
         }
 
         #titleScreen p {
@@ -276,7 +277,7 @@
 
         .number-btn[data-num="clear"] {
             background: white;
-            color: #aaa;
+            color: #667eea;
             border-color: #667eea;
             font-size: 16px;
         }
@@ -474,6 +475,8 @@
         let isPaused = false;
         let fallInterval = null;
         let currentTop = 0;
+        let titleTapCount = 0;
+        let titleTapTimer = null;
 
         const FALL_SPEED = 1;
         const FRAME_RATE = 30;
@@ -647,6 +650,27 @@
 
         // 初期化
         loadBestScores();
+
+        // タイトルタップでスコアリセット
+        titleScreen.querySelector('h1').addEventListener('click', () => {
+            titleTapCount++;
+            
+            if (titleTapTimer) clearTimeout(titleTapTimer);
+            
+            if (titleTapCount >= 5) {
+                localStorage.removeItem('warizanBestScore');
+                localStorage.removeItem('warizanBestCombo');
+                bestScore = 0;
+                bestCombo = 0;
+                bestScoreDisplay.textContent = 0;
+                bestComboDisplay.textContent = 0;
+                titleTapCount = 0;
+            } else {
+                titleTapTimer = setTimeout(() => {
+                    titleTapCount = 0;
+                }, 1000);
+            }
+        });
     </script>
 </body>
 </html>
