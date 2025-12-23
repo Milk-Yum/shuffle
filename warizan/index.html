@@ -136,7 +136,7 @@
 
         #bottomBox {
             position: absolute;
-            bottom: 370px;
+            bottom: 20px;
             left: 20px;
             width: 80px;
             height: 80px;
@@ -338,7 +338,7 @@
             justify-content: center;
             align-items: center;
             position: absolute;
-            bottom: 305px;
+            bottom: calc(15px + 10px + 50px * 4 + 6px * 3 + 10px + 44px + 10px);
             right: 15px;
         }
 
@@ -508,7 +508,7 @@
                 currentTop += FALL_SPEED;
                 fallingElement.style.top = currentTop + 'px';
 
-                const gameAreaHeight = gameArea.offsetHeight - 100;
+                const gameAreaHeight = gameArea.offsetHeight - 20;
                 if (currentTop >= gameAreaHeight) {
                     endGame();
                 }
