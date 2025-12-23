@@ -362,6 +362,14 @@
             position: absolute;
             bottom: 275px;
             right: 15px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        #resumeBtn.active {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         #resumeBtn:active {
@@ -375,6 +383,41 @@
             border-top: 12px solid transparent;
             border-bottom: 12px solid transparent;
             margin-left: 5px;
+        }
+
+        #stopBtn {
+            width: 60px;
+            height: 44px;
+            background: #ff6b6b;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255,107,107,0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            bottom: 275px;
+            left: 15px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        #stopBtn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #stopBtn:active {
+            transform: scale(0.95);
+        }
+
+        .stop-icon {
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 2px;
         }
 
         .correct-effect {
@@ -435,6 +478,9 @@
             <button id="resumeBtn">
                 <div class="resume-icon"></div>
             </button>
+            <button id="stopBtn">
+                <div class="stop-icon"></div>
+            </button>
         </div>
 
         <div id="gameOver">
@@ -451,6 +497,7 @@
         const answerInput = document.getElementById('answerInput');
         const pauseBtn = document.getElementById('pauseBtn');
         const resumeBtn = document.getElementById('resumeBtn');
+        const stopBtn = document.getElementById('stopBtn');
         const scoreDisplay = document.getElementById('score');
         const comboDisplay = document.getElementById('combo');
         const gameOverScreen = document.getElementById('gameOver');
@@ -544,11 +591,15 @@
             if (isPaused) {
                 pauseBtn.innerHTML = '<div class="play-icon"></div>';
                 pauseOverlay.classList.add('active');
+                resumeBtn.classList.add('active');
+                stopBtn.classList.add('active');
                 fallingElement.classList.add('hidden');
                 bottomBox.classList.add('hidden');
             } else {
                 pauseBtn.innerHTML = '<div class="pause-icon"></div>';
                 pauseOverlay.classList.remove('active');
+                resumeBtn.classList.remove('active');
+                stopBtn.classList.remove('active');
                 fallingElement.classList.remove('hidden');
                 bottomBox.classList.remove('hidden');
             }
@@ -611,7 +662,18 @@
         }
 
         function returnToTitle() {
+            if (gameRunning) {
+                gameRunning = false;
+                isPaused = false;
+                if (fallInterval) clearInterval(fallInterval);
+                if (fallingElement) fallingElement.remove();
+            }
             loadBestScores();
+            pauseOverlay.classList.remove('active');
+            resumeBtn.classList.remove('active');
+            stopBtn.classList.remove('active');
+            pauseBtn.innerHTML = '<div class="pause-icon"></div>';
+            bottomBox.classList.remove('hidden');
             titleScreen.classList.remove('hidden');
         }
 
@@ -635,6 +697,7 @@
 
         pauseBtn.addEventListener('click', togglePause);
         resumeBtn.addEventListener('click', togglePause);
+        stopBtn.addEventListener('click', returnToTitle);
 
         answerInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && gameRunning && answerInput.value && !isPaused) {
