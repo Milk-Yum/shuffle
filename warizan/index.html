@@ -106,10 +106,33 @@
             cursor: pointer;
             box-shadow: 0 8px 20px rgba(0,0,0,0.3);
             transition: transform 0.2s;
+            margin-bottom: 20px;
         }
 
         #startBtn:active {
             transform: scale(0.95);
+        }
+
+        .difficulty-stars {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .star {
+            font-size: 48px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            opacity: 0.3;
+        }
+
+        .star.active {
+            opacity: 1;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+        }
+
+        .star:active {
+            transform: scale(0.9);
         }
 
         #gameArea {
@@ -133,6 +156,22 @@
 
         .falling-number.hidden {
             visibility: hidden;
+        }
+
+        .falling-number.fly-away {
+            animation: flyAway 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes flyAway {
+            0% {
+                transform: translateX(-50%) scale(1);
+            }
+            100% {
+                top: -150px;
+                left: 120%;
+                transform: translateX(0) scale(0.8);
+                opacity: 0;
+            }
         }
 
         #bottomBox {
@@ -440,6 +479,11 @@
                 <p>最高連続: <span id="bestCombo">0</span></p>
             </div>
             <button id="startBtn">スタート</button>
+            <div class="difficulty-stars">
+                <span class="star" data-level="0">★</span>
+                <span class="star" data-level="1">★</span>
+                <span class="star" data-level="2">★</span>
+            </div>
         </div>
 
         <div id="gameArea">
@@ -524,6 +568,9 @@
         let currentTop = 0;
         let titleTapCount = 0;
         let titleTapTimer = null;
+        let difficultyLevel = 0;
+        let currentRemainder = 0;
+        let isRemainderFalling = false;
 
         const FALL_SPEED = 1;
         const FRAME_RATE = 30;
@@ -551,11 +598,48 @@
         }
 
         function generateProblem() {
-            currentDivisor = Math.floor(Math.random() * 8) + 2;
-            bottomBox.textContent = currentDivisor;
+            if (difficultyLevel === 0) {
+                // レベル0: 1桁の割り算（デフォルト）
+                currentDivisor = Math.floor(Math.random() * 8) + 2;
+                const answer = Math.floor(Math.random() * 12) + 1;
+                currentDividend = currentDivisor * answer;
+                currentRemainder = 0;
+            } else if (difficultyLevel === 1) {
+                // レベル1: 2桁÷2桁の割り算（余りなし、割られる数10-99）
+                currentDividend = Math.floor(Math.random() * 90) + 10; // 10-99
+                // 割られる数の約数を割る数として選ぶ
+                const divisors = [];
+                for (let i = 2; i <= currentDividend; i++) {
+                    if (currentDividend % i === 0 && i >= 10 && i <= 99) {
+                        divisors.push(i);
+                    }
+                }
+                if (divisors.length > 0) {
+                    currentDivisor = divisors[Math.floor(Math.random() * divisors.length)];
+                } else {
+                    // 約数がない場合は再生成
+                    return generateProblem();
+                }
+                currentRemainder = 0;
+            } else if (difficultyLevel === 2) {
+                // レベル2: 2桁÷2桁で余りが出る問題
+                currentDividend = Math.floor(Math.random() * 90) + 10; // 10-99
+                currentDivisor = Math.floor(Math.random() * 90) + 10; // 10-99
+                
+                // 割り切れない組み合わせになるまで再生成
+                if (currentDividend % currentDivisor === 0 || currentDividend < currentDivisor) {
+                    return generateProblem();
+                }
+                currentRemainder = currentDividend % currentDivisor;
+            } else {
+                // レベル3: 最高難易度
+                currentDivisor = Math.floor(Math.random() * 90) + 10;
+                const answer = Math.floor(Math.random() * 50) + 10;
+                currentDividend = currentDivisor * answer;
+                currentRemainder = 0;
+            }
 
-            const answer = Math.floor(Math.random() * 12) + 1;
-            currentDividend = currentDivisor * answer;
+            bottomBox.textContent = currentDivisor;
 
             if (fallingElement) {
                 fallingElement.remove();
@@ -581,7 +665,20 @@
 
                 const gameAreaHeight = gameArea.offsetHeight - 20;
                 if (currentTop >= gameAreaHeight) {
-                    endGame();
+                    // 余りが落下中の場合は吹き飛ばす
+                    if (isRemainderFalling) {
+                        clearInterval(fallInterval);
+                        fallingElement.classList.add('fly-away');
+                        isRemainderFalling = false;
+                        
+                        setTimeout(() => {
+                            generateProblem();
+                            startFalling();
+                        }, 600);
+                    } else {
+                        // 通常のゲームオーバー
+                        endGame();
+                    }
                 }
             }, 1000 / FRAME_RATE);
         }
@@ -609,7 +706,7 @@
             if (isPaused) return;
             
             const userAnswer = parseInt(answerInput.value);
-            const correctAnswer = currentDividend / currentDivisor;
+            const correctAnswer = Math.floor(currentDividend / currentDivisor);
 
             if (userAnswer === correctAnswer) {
                 score += 10 + combo;
@@ -622,8 +719,16 @@
                 bottomBox.classList.add('correct-effect');
                 setTimeout(() => bottomBox.classList.remove('correct-effect'), 300);
 
-                generateProblem();
-                startFalling();
+                // レベル2で余りがある場合、余りを表示して落下継続
+                if (difficultyLevel === 2 && currentRemainder > 0) {
+                    // 数字を余りに変更
+                    fallingElement.textContent = currentRemainder;
+                    isRemainderFalling = true;
+                    // 落下は継続（startFallingはそのまま）
+                } else {
+                    generateProblem();
+                    startFalling();
+                }
             } else {
                 combo = 0;
                 comboDisplay.textContent = combo;
@@ -713,6 +818,32 @@
 
         // 初期化
         loadBestScores();
+
+        // 難易度選択
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', (e) => {
+                const starIndex = parseInt(e.target.dataset.level);
+                
+                // すでにアクティブな星をクリックした場合はレベル0に戻す
+                if (e.target.classList.contains('active')) {
+                    e.target.classList.remove('active');
+                    difficultyLevel = 0;
+                } else {
+                    // 他の星を全て非アクティブにして選択した星をアクティブに
+                    document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    // 左から順にレベル1, 2, 3
+                    if (starIndex === 0) {
+                        difficultyLevel = 1;
+                    } else if (starIndex === 1) {
+                        difficultyLevel = 2;
+                    } else {
+                        difficultyLevel = 3;
+                    }
+                }
+            });
+        });
 
         // タイトルタップでスコアリセット
         titleScreen.querySelector('h1').addEventListener('click', () => {
