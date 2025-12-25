@@ -158,22 +158,6 @@
             visibility: hidden;
         }
 
-        .falling-number.fly-away {
-            animation: flyAway 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-
-        @keyframes flyAway {
-            0% {
-                transform: translateX(-50%) scale(1);
-            }
-            100% {
-                top: -150px;
-                left: 120%;
-                transform: translateX(0) scale(0.8);
-                opacity: 0;
-            }
-        }
-
         #bottomBox {
             position: absolute;
             bottom: 20px;
@@ -513,7 +497,7 @@
                 <button class="number-btn" data-num="3">3</button>
                 <button class="number-btn" data-num="clear">Clear</button>
                 <button class="number-btn" data-num="0">0</button>
-                <button class="number-btn" data-num="submit">OK</button>
+                <button class="number-btn ok-btn" data-num="submit">OK</button>
             </div>
         </div>
 
@@ -571,6 +555,7 @@
         let difficultyLevel = 0;
         let currentRemainder = 0;
         let isRemainderFalling = false;
+        let isAnswering = false;
 
         const FALL_SPEED = 1;
         const FRAME_RATE = 30;
@@ -664,7 +649,10 @@
                 fallingElement.style.top = currentTop + 'px';
 
                 const gameAreaHeight = gameArea.offsetHeight - 20;
-                if (currentTop >= gameAreaHeight) {
+                // 余りの場合は少し上（120pxの位置）で飛ばす
+                const flyHeight = isRemainderFalling ? gameAreaHeight - 100 : gameAreaHeight;
+                
+                if (currentTop >= flyHeight) {
                     // 余りが落下中の場合は吹き飛ばす
                     if (isRemainderFalling) {
                         clearInterval(fallInterval);
@@ -703,12 +691,27 @@
         }
 
         function checkAnswer() {
-            if (isPaused) return;
+            if (isPaused || isAnswering) return;
+            
+            // 余りが落下中にOKを押した場合は次の問題へ（入力チェックより前）
+            if (isRemainderFalling) {
+                isRemainderFalling = false;
+                answerInput.value = '';
+                generateProblem();
+                startFalling();
+                return;
+            }
+            
+            // 通常の問題回答時のみ入力チェック
+            if (!answerInput.value) return;
             
             const userAnswer = parseInt(answerInput.value);
             const correctAnswer = Math.floor(currentDividend / currentDivisor);
 
             if (userAnswer === correctAnswer) {
+                // 連打防止フラグ
+                isAnswering = true;
+                
                 score += 10 + combo;
                 combo++;
                 if (combo > maxCombo) maxCombo = combo;
@@ -716,18 +719,21 @@
                 scoreDisplay.textContent = score;
                 comboDisplay.textContent = combo;
 
+                // 正解後すぐに入力欄をリセット
+                answerInput.value = '';
+
                 bottomBox.classList.add('correct-effect');
                 setTimeout(() => bottomBox.classList.remove('correct-effect'), 300);
 
                 // レベル2で余りがある場合、余りを表示して落下継続
                 if (difficultyLevel === 2 && currentRemainder > 0) {
-                    // 数字を余りに変更
                     fallingElement.textContent = currentRemainder;
                     isRemainderFalling = true;
-                    // 落下は継続（startFallingはそのまま）
+                    isAnswering = false;
                 } else {
                     generateProblem();
                     startFalling();
+                    isAnswering = false;
                 }
             } else {
                 combo = 0;
