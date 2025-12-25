@@ -693,16 +693,7 @@
         function checkAnswer() {
             if (isPaused || isAnswering) return;
             
-            // 余りが落下中にOKを押した場合は次の問題へ（入力チェックより前）
-            if (isRemainderFalling) {
-                isRemainderFalling = false;
-                answerInput.value = '';
-                generateProblem();
-                startFalling();
-                return;
-            }
-            
-            // 通常の問題回答時のみ入力チェック
+            // 入力がない場合は何もしない
             if (!answerInput.value) return;
             
             const userAnswer = parseInt(answerInput.value);
@@ -725,11 +716,20 @@
                 bottomBox.classList.add('correct-effect');
                 setTimeout(() => bottomBox.classList.remove('correct-effect'), 300);
 
-                // レベル2で余りがある場合、余りを表示して落下継続
+                // レベル2で余りがある場合、余りを表示して2秒後に次の問題へ
                 if (difficultyLevel === 2 && currentRemainder > 0) {
                     fallingElement.textContent = currentRemainder;
                     isRemainderFalling = true;
                     isAnswering = false;
+                    
+                    // 2秒後に次の問題へ
+                    setTimeout(() => {
+                        if (isRemainderFalling) {
+                            isRemainderFalling = false;
+                            generateProblem();
+                            startFalling();
+                        }
+                    }, 2000);
                 } else {
                     generateProblem();
                     startFalling();
