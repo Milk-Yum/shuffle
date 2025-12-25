@@ -716,20 +716,22 @@
                 bottomBox.classList.add('correct-effect');
                 setTimeout(() => bottomBox.classList.remove('correct-effect'), 300);
 
-                // レベル2で余りがある場合、余りを表示して2秒後に次の問題へ
+                // レベル2で余りがある場合、余りを表示して1秒後に次の問題へ
                 if (difficultyLevel === 2 && currentRemainder > 0) {
                     fallingElement.textContent = currentRemainder;
+                    fallingElement.style.color = '#999';
                     isRemainderFalling = true;
                     isAnswering = false;
                     
-                    // 2秒後に次の問題へ
+                    // 1秒後に次の問題へ
                     setTimeout(() => {
                         if (isRemainderFalling) {
                             isRemainderFalling = false;
+                            fallingElement.style.color = '#667eea';
                             generateProblem();
                             startFalling();
                         }
-                    }, 2000);
+                    }, 1000);
                 } else {
                     generateProblem();
                     startFalling();
