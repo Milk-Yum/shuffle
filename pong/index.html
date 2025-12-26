@@ -18,13 +18,24 @@
             min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
         }
         
         #gameContainer {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+        }
+        
+        h1 {
+            margin: 5px 0 !important;
+            font-size: 24px !important;
         }
         
         canvas {
@@ -33,8 +44,10 @@
             display: block;
             touch-action: none;
             cursor: none;
-            max-width: 100vw;
-            max-height: 100vh;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 400 / 800;
         }
         
         #info {
@@ -44,16 +57,18 @@
         }
         
         #score {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             color: #fff;
+            margin: 5px 0;
         }
         
         #instructions {
             color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
+            font-size: 12px;
             text-align: center;
             max-width: 400px;
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -63,8 +78,8 @@
         <canvas id="gameCanvas" width="400" height="800"></canvas>
         <div id="score">Player: <span id="playerScore">0</span> - CPU: <span id="cpuScore">0</span></div>
         <div id="instructions">
-            <p style="margin-bottom: 10px;">🖱️ マウス: 移動 | 📱 タッチ: ドラッグで移動</p>
-            <p>SPACEキー: ゲーム開始/ポーズ | Rキー: リセット</p>
+            <p style="margin-bottom: 10px;">📱 画面中央タップで開始 | 🖱️ SPACEキーで開始</p>
+            <p>🖱️ マウス/タッチ: パドル操作 | Rキー: リセット</p>
         </div>
     </div>
 
@@ -122,6 +137,30 @@
             const touch = e.touches[0];
             inputX = touch.clientX - rect.left;
             inputX = Math.max(0, Math.min(canvas.width, inputX));
+            
+            // 画面中央タップで試合開始
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const tapX = touch.clientX - rect.left;
+            const tapY = touch.clientY - rect.top;
+            
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const scaledTapX = tapX * scaleX;
+            const scaledTapY = tapY * scaleY;
+            
+            const dx = scaledTapX - centerX;
+            const dy = scaledTapY - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 100) {
+                if (!game.running) {
+                    game.running = true;
+                    game.paused = false;
+                } else {
+                    game.paused = !game.paused;
+                }
+            }
         }, { passive: false });
         
         // キーボード
