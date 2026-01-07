@@ -3,7 +3,7 @@
   import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
   // 【ここをステップ2の自分の鍵に書き換える！】
-const firebaseConfig = {
+  const firebaseConfig = {
   apiKey: "AIzaSyD4-mJxug55N26rxomekf1Tvn9YgToacTY",
   authDomain: "nakami-88027.firebaseapp.com",
   projectId: "nakami-88027",
@@ -11,7 +11,9 @@ const firebaseConfig = {
   messagingSenderId: "316064567852",
   appId: "1:316064567852:web:85642cd678d7b4160b7789",
   measurementId: "G-MWRHR1T40P"
-};
+    
+  };
+
   // Firebaseの初期化
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
