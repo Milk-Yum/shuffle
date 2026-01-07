@@ -116,6 +116,9 @@
         const blockWidth = 40;
         const blockHeight = 15;
         
+        const permanentBlocks = [];
+        const permanentBlockSize = 25;
+        
         function initializeBlocks() {
             blocks.length = 0;
             const padding = 40;
@@ -136,9 +139,49 @@
                             break;
                         }
                     }
+                    for (let pblock of permanentBlocks) {
+                        if (Math.abs(pblock.x - x) < blockWidth + 10 && 
+                            Math.abs(pblock.y - y) < blockHeight + 10) {
+                            overlap = true;
+                            break;
+                        }
+                    }
                 } while (overlap);
                 
                 blocks.push({ x, y, width: blockWidth, height: blockHeight, active: true });
+            }
+        }
+        
+        function initializePermanentBlocks() {
+            permanentBlocks.length = 0;
+            const padding = 50;
+            const usableWidth = canvas.width - padding * 2;
+            const usableHeight = canvas.height - padding * 2;
+            
+            for (let i = 0; i < 10; i++) {
+                let x, y, overlap;
+                do {
+                    overlap = false;
+                    x = padding + Math.random() * (usableWidth - permanentBlockSize);
+                    y = padding + Math.random() * (usableHeight - permanentBlockSize);
+                    
+                    for (let pblock of permanentBlocks) {
+                        if (Math.abs(pblock.x - x) < permanentBlockSize + 10 && 
+                            Math.abs(pblock.y - y) < permanentBlockSize + 10) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+                    for (let block of blocks) {
+                        if (Math.abs(block.x - x) < permanentBlockSize + 10 && 
+                            Math.abs(block.y - y) < permanentBlockSize + 10) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+                } while (overlap);
+                
+                permanentBlocks.push({ x, y, size: permanentBlockSize });
             }
         }
         
@@ -312,6 +355,28 @@
                 }
             }
             
+            // 永続ブロック衝突判定
+            for (let pblock of permanentBlocks) {
+                const closestX = Math.max(pblock.x, Math.min(ball.x, pblock.x + pblock.size));
+                const closestY = Math.max(pblock.y, Math.min(ball.y, pblock.y + pblock.size));
+                
+                const dx = ball.x - closestX;
+                const dy = ball.y - closestY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < ball.radius) {
+                    // ボールの跳ね返し判定
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        ball.speedX = -ball.speedX;
+                        ball.x = dx > 0 ? pblock.x + pblock.size + ball.radius : pblock.x - ball.radius;
+                    } else {
+                        ball.speedY = -ball.speedY;
+                        ball.y = dy > 0 ? pblock.y + pblock.size + ball.radius : pblock.y - ball.radius;
+                    }
+                    break;
+                }
+            }
+            
             // スピード制限
             const speed = Math.sqrt(ball.speedX ** 2 + ball.speedY ** 2);
             if (speed > ball.maxSpeed) {
@@ -366,6 +431,15 @@
                 }
             }
             
+            // 永続ブロック描画
+            for (let pblock of permanentBlocks) {
+                ctx.fillStyle = '#00aaff';
+                ctx.fillRect(pblock.x, pblock.y, pblock.size, pblock.size);
+                ctx.strokeStyle = '#0055ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(pblock.x, pblock.y, pblock.size, pblock.size);
+            }
+            
             // ボール
             ctx.fillStyle = '#fff';
             ctx.beginPath();
@@ -392,6 +466,7 @@
         
         // ゲーム初期化
         initializeBlocks();
+        initializePermanentBlocks();
         gameLoop();
     </script>
 </body>
