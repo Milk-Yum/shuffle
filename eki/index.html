@@ -1,32 +1,25 @@
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動作テスト</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>表示テスト</h1>
+    <p>iPhoneのSafariでこれが見えますか？</p>
+    <button onclick="check()">ボタンを押して！</button>
+    <p id="msg"></p>
 
-  // 【ここをステップ2の自分の鍵に書き換える！】
-  const firebaseConfig = {
-    apiKey: "AIzaSy...",
-    authDomain: "...",
-    projectId: "...",
-    storageBucket: "...",
-    messagingSenderId: "...",
-    appId: "..."
-  };
-
-  // Firebaseの初期化
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // 例：メッセージを保存する関数
-  async function sendMessage(station, text) {
-    try {
-      await addDoc(collection(db, "messages"), {
-        station: station,
-        content: text,
-        timestamp: new Date()
-      });
-      alert("ボトルを流しました！");
-    } catch (e) {
-      console.error("エラー: ", e);
-    }
-  }
-</script>
+    <script>
+        function check() {
+            document.getElementById('msg').innerText = "動いています！おめでとうございます！";
+            alert("JavaScriptも動いています！");
+        }
+    </script>
+</body>
+</html>
