@@ -3,47 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>駅名取得テスト</title>
+    <title>駅のボトルメール</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; background: #f0f8ff; }
-        button { padding: 15px 30px; font-size: 18px; border-radius: 10px; border: none; background: #007bff; color: white; }
-        #result { margin-top: 20px; font-weight: bold; font-size: 24px; color: #333; }
+        /* 全体の背景：穏やかな海のイメージ */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #334d66;
+        }
+
+        /* コンテナ */
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 駅名表示エリア */
+        .station-box {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 入力エリア（ボトルの代わり） */
+        .bottle-card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            border: 1px solid #e0e7ff;
+            border-radius: 15px;
+            padding: 12px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            resize: none;
+            outline: none;
+            background: #f9fbff;
+        }
+
+        /* 流すボタン */
+        .btn-send {
+            background: #5dade2;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(93, 173, 226, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-send:active {
+            transform: scale(0.95);
+        }
+
+        /* 取得ボタン（控えめ） */
+        .btn-refresh {
+            background: none;
+            border: 1px solid #ffffff;
+            color: #ffffff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            margin-top: auto;
+            padding: 20px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+        }
     </style>
 </head>
 <body>
-    <h1>駅名取得テスト</h1>
-    <button onclick="getStation()">今どこ駅？</button>
-    <div id="result">ここに駅名が出ます</div>
+
+    <div class="container">
+        <h1>Eki Bottle Mail</h1>
+        
+        <button class="btn-refresh" onclick="getStation()">場所を更新する</button>
+        
+        <div id="station-display" class="station-box">
+            どこかの線路の上
+        </div>
+
+        <div class="bottle-card">
+            <textarea id="message-input" placeholder="今の気持ちをボトルに詰めましょう..."></textarea>
+            <button class="btn-send" onclick="sendBottle()">海へ流す</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        Floating on the digital sea
+    </div>
 
     <script>
+        // 駅名取得のロジック
         async function getStation() {
-            document.getElementById('result').innerText = "探し中...";
+            const display = document.getElementById('station-display');
+            display.innerText = "潮の流れを確認中...";
 
-            // 1. GPSで現在地を取得
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
 
-                // 2. 無料APIを叩いて駅名を探す
                 try {
                     const url = `https://express.heartrails.com/api/json?method=getStations&x=${lng}&y=${lat}`;
                     const response = await fetch(url);
                     const data = await response.json();
 
                     if (data.response.station) {
-                        const stationName = data.response.station[0].name;
-                        const lineName = data.response.station[0].line;
-                        document.getElementById('result').innerText = `${lineName} ${stationName}駅`;
+                        const s = data.response.station[0];
+                        display.innerText = `${s.line} ${s.name}駅 付近`;
                     } else {
-                        document.getElementById('result').innerText = "近くに駅が見つかりませんでした";
+                        display.innerText = "岸から離れています（駅なし）";
                     }
                 } catch (error) {
-                    document.getElementById('result').innerText = "エラー: 駅名が取れませんでした";
+                    display.innerText = "通信エラー";
                 }
-            }, (error) => {
-                alert("位置情報の許可が必要です！");
+            }, () => {
+                alert("位置情報を許可してください");
             });
         }
+
+        // 送信ボタン（今はまだアラートだけ）
+        function sendBottle() {
+            const msg = document.getElementById('message-input').value;
+            if(!msg) return alert("空のボトルは流せません");
+            
+            alert("「" + msg + "」を海へ流しました！");
+            document.getElementById('message-input').value = "";
+        }
+
+        // 起動時に駅を取得
+        window.onload = getStation;
     </script>
 </body>
 </html>
