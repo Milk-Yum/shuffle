@@ -147,7 +147,9 @@
                 } else {
                     textDisplay.innerText = "海にはまだ何も浮いていないようです...";
                 }
-            } catch (e) { console.error(e); textDisplay.innerText = "ボトルが割れていました"; }
+            } catch (e) { console.error(e); 
+    // 「ボトルが割れていました」の代わりにエラーの詳細をアラートに出す
+    alert("エラー詳細: " + e.message); }
         };
 
         // ★返信を送る
