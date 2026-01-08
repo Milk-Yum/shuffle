@@ -8,25 +8,28 @@
         body { margin: 0; padding: 0; font-family: sans-serif; background: linear-gradient(180deg, #a1c4fd 0%, #c2e9fb 100%); min-height: 100vh; display: flex; flex-direction: column; align-items: center; color: #334d66; overflow-x: hidden; }
         .container { width: 90%; max-width: 400px; margin-top: 40px; text-align: center; }
         h1 { font-size: 1.5rem; color: #ffffff; text-shadow: 1px 1px 4px rgba(0,0,0,0.1); }
-        .station-box { background: rgba(255, 255, 255, 0.6); padding: 15px; border-radius: 20px; margin-bottom: 20px; font-weight: bold; backdrop-filter: blur(5px); }
+        .station-box { background: rgba(255, 255, 255, 0.6); padding: 15px; border-radius: 20px; margin-bottom: 20px; font-weight: bold; backdrop-filter: blur(5px); min-height: 20px; }
         .bottle-card { background: #ffffff; padding: 25px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; }
-        textarea { width: 100%; height: 100px; border: 1px solid #e0e7ff; border-radius: 15px; padding: 12px; box-sizing: border-box; font-size: 16px; background: #f9fbff; -webkit-appearance: none; }
-        .btn-send { background: #5dade2; color: white; border: none; padding: 15px; border-radius: 50px; font-size: 1rem; font-weight: bold; cursor: pointer; }
-        .btn-pick-up { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; border: none; border-radius: 50%; width: 70px; height: 70px; font-size: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); cursor: pointer; }
+        textarea { width: 100%; height: 100px; border: 1px solid #e0e7ff; border-radius: 15px; padding: 12px; box-sizing: border-box; font-size: 16px; background: #f9fbff; -webkit-appearance: none; resize: none; }
+        .btn-send { background: #5dade2; color: white; border: none; padding: 15px; border-radius: 50px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        .btn-send:active { transform: scale(0.95); }
         
-        /* モーダル関連 */
+        /* 拾うボタン（瓶アイコン） */
+        .btn-pick-up { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; border: none; border-radius: 50%; width: 70px; height: 70px; font-size: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); cursor: pointer; z-index: 10; }
+        
+        /* モーダル表示 */
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
-        .modal { background: white; padding: 20px; border-radius: 20px; width: 85%; text-align: center; max-width: 350px; max-height: 80vh; overflow-y: auto; }
+        .modal { background: white; padding: 20px; border-radius: 20px; width: 85%; text-align: center; max-width: 350px; max-height: 85vh; overflow-y: auto; }
         #picked-station { font-size: 0.8rem; color: #8899aa; margin-bottom: 10px; }
-        #picked-text { font-size: 1.1rem; line-height: 1.5; margin-bottom: 20px; }
+        #picked-text { font-size: 1.1rem; line-height: 1.5; margin-bottom: 20px; transition: opacity 0.5s; word-wrap: break-word; }
         
-        /* 返信セクション */
+        /* 返信エリア */
         .reply-section { border-top: 1px dashed #eee; padding-top: 15px; margin-top: 15px; text-align: left; }
         .reply-item { background: #f0f7ff; padding: 8px 12px; border-radius: 10px; font-size: 0.9rem; margin-bottom: 8px; color: #556677; }
         .reply-input-area { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .reply-input { font-size: 14px; height: 60px; }
+        .reply-input { font-size: 14px; height: 60px; border: 1px solid #eee; border-radius: 10px; padding: 8px; }
         .btn-reply-send { background: #a1c4fd; color: white; border: none; padding: 8px; border-radius: 10px; font-size: 0.8rem; cursor: pointer; }
-        .btn-close { margin-top: 20px; background: #eee; border: none; padding: 10px 20px; border-radius: 20px; width: 100%; }
+        .btn-close { margin-top: 20px; background: #eee; border: none; padding: 10px 20px; border-radius: 20px; width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -48,7 +51,8 @@
             <p id="picked-text"></p>
             
             <div class="reply-section">
-                <div id="reply-list"></div> <div class="reply-input-area">
+                <div id="reply-list"></div>
+                <div class="reply-input-area">
                     <textarea id="reply-input" class="reply-input" placeholder="返信を書く..."></textarea>
                     <button id="reply-send-btn" class="btn-reply-send">返信を添える</button>
                 </div>
@@ -59,9 +63,11 @@
     </div>
 
     <script type="module">
+        // Firebaseライブラリの読み込み
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, limit, serverTimestamp, updateDoc, increment, doc, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyD4-mJxug55N26rxomekf1Tvn9YgToacTY",
             authDomain: "nakami-88027.firebaseapp.com",
@@ -75,8 +81,9 @@
         const db = getFirestore(app);
 
         let currentStation = "どこかの線路の上";
-        let currentBottleId = null; // 現在拾っているボトルのID
+        let currentBottleId = null;
 
+        // 1. 現在地の駅名を取得
         async function getStation() {
             const display = document.getElementById('station-display');
             navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -89,92 +96,98 @@
                         currentStation = `${s.line} ${s.name}駅`;
                         display.innerText = currentStation + " 付近";
                     }
-                } catch(e) {}
+                } catch(e) {
+                    display.innerText = "駅名の取得に失敗";
+                }
+            }, (err) => {
+                display.innerText = "位置情報を許可してください";
             });
         }
 
-        // 放流
+        // 2. メッセージを流す
         document.getElementById('send-btn').onclick = async () => {
             const input = document.getElementById('message-input');
             if(!input.value) return alert("中身を書いてね");
             try {
                 await addDoc(collection(db, "bottles"), {
-                    text: input.value, station: currentStation, createdAt: serverTimestamp(), readCount: 0 
+                    text: input.value,
+                    station: currentStation,
+                    createdAt: serverTimestamp(),
+                    readCount: 0 
                 });
                 alert("ボトルを流しました！");
                 input.value = "";
-            } catch (e) { alert("エラーでした"); }
-        };
-
-// ボトルを拾う（強化版：5回目を確実に弾く）
-document.getElementById('pick-btn').onclick = async () => {
-    const textDisplay = document.getElementById('picked-text');
-    const stationDisplay = document.getElementById('picked-station');
-    const replyList = document.getElementById('reply-list');
-    const overlay = document.getElementById('overlay');
-    
-    textDisplay.innerText = "拾い上げています...";
-    replyList.innerHTML = "";
-    overlay.style.display = 'flex';
-
-    try {
-        // 1. readCount が 5 未満のものを取得（インデックスがないとここでエラーになる）
-        const q = query(collection(db, "bottles"), where("readCount", "<", 5), limit(20));
-        const snap = await getDocs(q);
-        const bottles = [];
-        snap.forEach((d) => {
-            const data = d.data();
-            // 念のため、取得したデータの中でも readCount をチェック
-            if ((data.readCount || 0) < 5) {
-                bottles.push({ id: d.id, ...data });
+            } catch (e) {
+                alert("エラーで流せませんでした");
             }
-        });
-
-        if(bottles.length > 0) {
-            const target = bottles[Math.floor(Math.random() * bottles.length)];
-            currentBottleId = target.id;
-
-            // 既読カウントアップ
-            const newCount = (target.readCount || 0) + 1;
-            await updateDoc(doc(db, "bottles", target.id), { readCount: increment(1) });
-
-            // 5回目だったら、文字を極限まで薄くする
-            const opacities = [1.0, 0.7, 0.4, 0.15, 0.02];
-            const targetOpacity = opacities[newCount - 1] || 0.02;
-
-            textDisplay.innerText = target.text;
-            textDisplay.style.opacity = targetOpacity;
-            stationDisplay.innerText = `漂着地: ${target.station || "不明"} (${newCount}回目)`;
-
-            // ★ 返信の読み込み
-            const qReply = query(collection(db, "replies"), where("parentId", "==", target.id), orderBy("createdAt", "asc"));
-            const replySnap = await getDocs(qReply);
-            replySnap.forEach((rd) => {
-                const div = document.createElement('div');
-                div.className = 'reply-item';
-                div.innerText = rd.data().text;
-                replyList.appendChild(div);
-            });
-
-        } else {
-            textDisplay.innerText = "海にはもう、読めるボトルが残っていないようです...";
-            stationDisplay.innerText = "";
-        }
-    } catch (e) {
-        console.error(e);
-        // インデックスエラーの場合はここにURLが含まれる
-        if (e.message.includes("index")) {
-            alert("インデックス作成が必要です。PCでコンソールを確認してください。");
-        } else {
-            textDisplay.innerText = "ボトルが波にさらわれてしまいました...";
-        }
-    }
-};
-    // 「ボトルが割れていました」の代わりにエラーの詳細をアラートに出す
-    alert("エラー詳細: " + e.message); }
         };
 
-        // ★返信を送る
+        // 3. ボトルを拾う
+        document.getElementById('pick-btn').onclick = async () => {
+            const textDisplay = document.getElementById('picked-text');
+            const stationDisplay = document.getElementById('picked-station');
+            const replyList = document.getElementById('reply-list');
+            const overlay = document.getElementById('overlay');
+            
+            textDisplay.innerText = "拾い上げています...";
+            textDisplay.style.opacity = 1.0;
+            replyList.innerHTML = "";
+            overlay.style.display = 'flex';
+
+            try {
+                // readCountが5未満のボトルを最大20件候補として取得
+                const q = query(collection(db, "bottles"), where("readCount", "<", 5), limit(20));
+                const snap = await getDocs(q);
+                const bottles = [];
+                snap.forEach((d) => bottles.push({ id: d.id, ...d.data() }));
+
+                if(bottles.length > 0) {
+                    const target = bottles[Math.floor(Math.random() * bottles.length)];
+                    currentBottleId = target.id;
+
+                    // カウントを1増やす
+                    const newCount = (target.readCount || 0) + 1;
+                    await updateDoc(doc(db, "bottles", target.id), {
+                        readCount: increment(1)
+                    });
+
+                    // 透明度の設定（5回目でほぼ消える）
+                    const opacities = [1.0, 0.7, 0.4, 0.15, 0.03];
+                    const targetOpacity = opacities[newCount - 1] || 0.03;
+
+                    textDisplay.innerText = target.text;
+                    textDisplay.style.opacity = targetOpacity;
+                    stationDisplay.innerText = `漂着地: ${target.station || "不明"} (${newCount}回目)`;
+
+                    // 返信を読み込む
+                    try {
+                        const qReply = query(collection(db, "replies"), where("parentId", "==", target.id), orderBy("createdAt", "asc"));
+                        const replySnap = await getDocs(qReply);
+                        replySnap.forEach((rd) => {
+                            const div = document.createElement('div');
+                            div.className = 'reply-item';
+                            div.innerText = rd.data().text;
+                            replyList.appendChild(div);
+                        });
+                    } catch (replyErr) {
+                        console.log("返信なし、またはインデックス待ち");
+                    }
+
+                } else {
+                    textDisplay.innerText = "海にはもうボトルが残っていないようです...";
+                    stationDisplay.innerText = "";
+                }
+            } catch (e) {
+                console.error(e);
+                if (e.message.includes("index")) {
+                    alert("インデックス作成が必要です。PCでコンソールを確認してください。");
+                } else {
+                    textDisplay.innerText = "ボトルが波にさらわれてしまいました";
+                }
+            }
+        };
+
+        // 4. 返信を送る
         document.getElementById('reply-send-btn').onclick = async () => {
             const input = document.getElementById('reply-input');
             if(!input.value || !currentBottleId) return;
@@ -185,19 +198,22 @@ document.getElementById('pick-btn').onclick = async () => {
                     text: input.value,
                     createdAt: serverTimestamp()
                 });
-                // 画面に即座に追加
                 const div = document.createElement('div');
                 div.className = 'reply-item';
                 div.innerText = input.value;
                 document.getElementById('reply-list').appendChild(div);
                 input.value = "";
-            } catch (e) { alert("返信に失敗しました"); }
+            } catch (e) {
+                alert("返信を送れませんでした");
+            }
         };
 
+        // 閉じる
         document.getElementById('close-btn').onclick = () => {
             document.getElementById('overlay').style.display = 'none';
         };
 
+        // 起動時に駅名取得を開始
         window.onload = getStation;
     </script>
 </body>
