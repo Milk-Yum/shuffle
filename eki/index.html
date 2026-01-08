@@ -16,6 +16,8 @@
             flex-direction: column;
             align-items: center;
             color: #334d66;
+            position: relative; /* 拾うボタンの基準 */
+            overflow: hidden; /* 意図しないスクロールを防ぐ */
         }
 
         /* コンテナ */
@@ -24,6 +26,7 @@
             max-width: 400px;
             margin-top: 40px;
             text-align: center;
+            z-index: 1; /* 手前に表示 */
         }
 
         h1 {
@@ -42,6 +45,7 @@
             font-weight: bold;
             font-size: 1.1rem;
             backdrop-filter: blur(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
 
         /* 入力エリア（ボトルの代わり） */
@@ -59,113 +63,4 @@
             width: 100%;
             height: 120px;
             border: 1px solid #e0e7ff;
-            border-radius: 15px;
-            padding: 12px;
-            box-sizing: border-box;
-            font-size: 1rem;
-            resize: none;
-            outline: none;
-            background: #f9fbff;
-        }
-
-        /* 流すボタン */
-        .btn-send {
-            background: #5dade2;
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(93, 173, 226, 0.4);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .btn-send:active {
-            transform: scale(0.95);
-        }
-
-        /* 取得ボタン（控えめ） */
-        .btn-refresh {
-            background: none;
-            border: 1px solid #ffffff;
-            color: #ffffff;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            margin-bottom: 10px;
-        }
-
-        .footer {
-            margin-top: auto;
-            padding: 20px;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.7);
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <h1>Eki Bottle Mail</h1>
-        
-        <button class="btn-refresh" onclick="getStation()">場所を更新する</button>
-        
-        <div id="station-display" class="station-box">
-            どこかの線路の上
-        </div>
-
-        <div class="bottle-card">
-            <textarea id="message-input" placeholder="今の気持ちをボトルに詰めましょう..."></textarea>
-            <button class="btn-send" onclick="sendBottle()">海へ流す</button>
-        </div>
-    </div>
-
-    <div class="footer">
-        Floating on the digital sea
-    </div>
-
-    <script>
-        // 駅名取得のロジック
-        async function getStation() {
-            const display = document.getElementById('station-display');
-            display.innerText = "潮の流れを確認中...";
-
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-
-                try {
-                    const url = `https://express.heartrails.com/api/json?method=getStations&x=${lng}&y=${lat}`;
-                    const response = await fetch(url);
-                    const data = await response.json();
-
-                    if (data.response.station) {
-                        const s = data.response.station[0];
-                        display.innerText = `${s.line} ${s.name}駅 付近`;
-                    } else {
-                        display.innerText = "岸から離れています（駅なし）";
-                    }
-                } catch (error) {
-                    display.innerText = "通信エラー";
-                }
-            }, () => {
-                alert("位置情報を許可してください");
-            });
-        }
-
-        // 送信ボタン（今はまだアラートだけ）
-        function sendBottle() {
-            const msg = document.getElementById('message-input').value;
-            if(!msg) return alert("空のボトルは流せません");
-            
-            alert("「" + msg + "」を海へ流しました！");
-            document.getElementById('message-input').value = "";
-        }
-
-        // 起動時に駅を取得
-        window.onload = getStation;
-    </script>
-</body>
-</html>
+            border-radius
