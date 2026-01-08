@@ -3,22 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>動作テスト</title>
+    <title>駅名取得テスト</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-        button { padding: 15px 30px; font-size: 18px; cursor: pointer; }
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; background: #f0f8ff; }
+        button { padding: 15px 30px; font-size: 18px; border-radius: 10px; border: none; background: #007bff; color: white; }
+        #result { margin-top: 20px; font-weight: bold; font-size: 24px; color: #333; }
     </style>
 </head>
 <body>
-    <h1>表示テスト</h1>
-    <p>iPhoneのSafariでこれが見えますか？</p>
-    <button onclick="check()">ボタンを押して！</button>
-    <p id="msg"></p>
+    <h1>駅名取得テスト</h1>
+    <button onclick="getStation()">今どこ駅？</button>
+    <div id="result">ここに駅名が出ます</div>
 
     <script>
-        function check() {
-            document.getElementById('msg').innerText = "動いています！おめでとうございます！";
-            alert("JavaScriptも動いています！");
+        async function getStation() {
+            document.getElementById('result').innerText = "探し中...";
+
+            // 1. GPSで現在地を取得
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+
+                // 2. 無料APIを叩いて駅名を探す
+                try {
+                    const url = `https://express.heartrails.com/api/json?method=getStations&x=${lng}&y=${lat}`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.response.station) {
+                        const stationName = data.response.station[0].name;
+                        const lineName = data.response.station[0].line;
+                        document.getElementById('result').innerText = `${lineName} ${stationName}駅`;
+                    } else {
+                        document.getElementById('result').innerText = "近くに駅が見つかりませんでした";
+                    }
+                } catch (error) {
+                    document.getElementById('result').innerText = "エラー: 駅名が取れませんでした";
+                }
+            }, (error) => {
+                alert("位置情報の許可が必要です！");
+            });
         }
     </script>
 </body>
