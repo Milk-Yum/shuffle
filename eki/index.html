@@ -106,48 +106,70 @@
             } catch (e) { alert("エラーでした"); }
         };
 
-        // 拾い上げる
-        document.getElementById('pick-btn').onclick = async () => {
-            const textDisplay = document.getElementById('picked-text');
-            const stationDisplay = document.getElementById('picked-station');
-            const replyList = document.getElementById('reply-list');
-            
-            textDisplay.innerText = "拾い上げています...";
-            replyList.innerHTML = ""; // 前の返信をクリア
-            document.getElementById('overlay').style.display = 'flex';
+// ボトルを拾う（強化版：5回目を確実に弾く）
+document.getElementById('pick-btn').onclick = async () => {
+    const textDisplay = document.getElementById('picked-text');
+    const stationDisplay = document.getElementById('picked-station');
+    const replyList = document.getElementById('reply-list');
+    const overlay = document.getElementById('overlay');
+    
+    textDisplay.innerText = "拾い上げています...";
+    replyList.innerHTML = "";
+    overlay.style.display = 'flex';
 
-            try {
-                const q = query(collection(db, "bottles"), limit(20));
-                const snap = await getDocs(q);
-                const bottles = [];
-                snap.forEach((d) => bottles.push({ id: d.id, ...d.data() }));
+    try {
+        // 1. readCount が 5 未満のものを取得（インデックスがないとここでエラーになる）
+        const q = query(collection(db, "bottles"), where("readCount", "<", 5), limit(20));
+        const snap = await getDocs(q);
+        const bottles = [];
+        snap.forEach((d) => {
+            const data = d.data();
+            // 念のため、取得したデータの中でも readCount をチェック
+            if ((data.readCount || 0) < 5) {
+                bottles.push({ id: d.id, ...data });
+            }
+        });
 
-                if(bottles.length > 0) {
-                    const target = bottles[Math.floor(Math.random() * bottles.length)];
-                    currentBottleId = target.id; // 返信用にIDを保持
+        if(bottles.length > 0) {
+            const target = bottles[Math.floor(Math.random() * bottles.length)];
+            currentBottleId = target.id;
 
-                    // 既読カウントアップ
-                    await updateDoc(doc(db, "bottles", target.id), { readCount: increment(1) });
+            // 既読カウントアップ
+            const newCount = (target.readCount || 0) + 1;
+            await updateDoc(doc(db, "bottles", target.id), { readCount: increment(1) });
 
-                    // 透明度演出
-                    const opacities = [1.0, 0.7, 0.4, 0.15, 0.05];
-                    textDisplay.innerText = target.text;
-                    textDisplay.style.opacity = opacities[target.readCount] || 0.05;
-                    stationDisplay.innerText = `漂着地: ${target.station || "不明"} (${(target.readCount+1)}回目)`;
+            // 5回目だったら、文字を極限まで薄くする
+            const opacities = [1.0, 0.7, 0.4, 0.15, 0.02];
+            const targetOpacity = opacities[newCount - 1] || 0.02;
 
-                    // ★返信を読み込む
-                    const qReply = query(collection(db, "replies"), where("parentId", "==", target.id), orderBy("createdAt", "asc"));
-                    const replySnap = await getDocs(qReply);
-                    replySnap.forEach((rd) => {
-                        const div = document.createElement('div');
-                        div.className = 'reply-item';
-                        div.innerText = rd.data().text;
-                        replyList.appendChild(div);
-                    });
-                } else {
-                    textDisplay.innerText = "海にはまだ何も浮いていないようです...";
-                }
-            } catch (e) { console.error(e); 
+            textDisplay.innerText = target.text;
+            textDisplay.style.opacity = targetOpacity;
+            stationDisplay.innerText = `漂着地: ${target.station || "不明"} (${newCount}回目)`;
+
+            // ★ 返信の読み込み
+            const qReply = query(collection(db, "replies"), where("parentId", "==", target.id), orderBy("createdAt", "asc"));
+            const replySnap = await getDocs(qReply);
+            replySnap.forEach((rd) => {
+                const div = document.createElement('div');
+                div.className = 'reply-item';
+                div.innerText = rd.data().text;
+                replyList.appendChild(div);
+            });
+
+        } else {
+            textDisplay.innerText = "海にはもう、読めるボトルが残っていないようです...";
+            stationDisplay.innerText = "";
+        }
+    } catch (e) {
+        console.error(e);
+        // インデックスエラーの場合はここにURLが含まれる
+        if (e.message.includes("index")) {
+            alert("インデックス作成が必要です。PCでコンソールを確認してください。");
+        } else {
+            textDisplay.innerText = "ボトルが波にさらわれてしまいました...";
+        }
+    }
+};
     // 「ボトルが割れていました」の代わりにエラーの詳細をアラートに出す
     alert("エラー詳細: " + e.message); }
         };
