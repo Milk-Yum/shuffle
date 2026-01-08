@@ -12,10 +12,10 @@
         .bottle-card { background: #ffffff; padding: 25px; border-radius: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; }
         textarea { width: 100%; height: 120px; border: 1px solid #e0e7ff; border-radius: 15px; padding: 12px; box-sizing: border-box; font-size: 16px; background: #f9fbff; -webkit-appearance: none; }
         .btn-send { background: #5dade2; color: white; border: none; padding: 15px; border-radius: 50px; font-size: 1rem; font-weight: bold; cursor: pointer; }
-        .btn-pick-up { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; border: 2px solid #a1c4fd; border-radius: 50%; width: 70px; height: 70px; font-size: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        /* 拾った時の表示 */
+        .btn-pick-up { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; border: 2px solid #a1c4fd; border-radius: 50%; width: 70px; height: 70px; font-size: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: none; cursor: pointer; }
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
-        .modal { background: white; padding: 20px; border-radius: 20px; width: 80%; text-align: center; }
+        .modal { background: white; padding: 20px; border-radius: 20px; width: 80%; text-align: center; max-width: 300px; }
+        #picked-station { font-size: 0.8rem; color: #8899aa; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -25,52 +25,108 @@
         <div id="station-display" class="station-box">潮の流れを確認中...</div>
         <div class="bottle-card">
             <textarea id="message-input" placeholder="今の気持ちをボトルに..."></textarea>
-            <button class="btn-send" onclick="sendBottle()">海へ流す</button>
+            <button id="send-btn" class="btn-send">海へ流す</button>
         </div>
     </div>
 
-    <button class="btn-pick-up" onclick="pickUpBottle()">🍾</button>
+    <button id="pick-btn" class="btn-pick-up">🍾</button>
 
-    <div id="overlay" onclick="this.style.display='none'">
-        <div class="modal" onclick="event.stopPropagation()">
-            <h2>ボトルの中身</h2>
+    <div id="overlay">
+        <div class="modal">
+            <div id="picked-station"></div>
             <p id="picked-text"></p>
-            <button onclick="document.getElementById('overlay').style.display='none'">閉じる</button>
+            <button id="close-btn">閉じる</button>
         </div>
     </div>
 
-    <script>
-        // エラー表示用
-        window.onerror = function(m, u, l){ alert("Error: " + m + " (Line: " + l + ")"); };
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        function getStation() {
-            var display = document.getElementById('station-display');
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                var url = "https://express.heartrails.com/api/json?method=getStations&x=" + pos.coords.longitude + "&y=" + pos.coords.latitude;
-                fetch(url).then(function(res){ return res.json(); }).then(function(data){
+        // あなたのFirebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4-mJxug55N26rxomekf1Tvn9YgToacTY",
+            authDomain: "nakami-88027.firebaseapp.com",
+            projectId: "nakami-88027",
+            storageBucket: "nakami-88027.firebasestorage.app",
+            messagingSenderId: "316064567852",
+            appId: "1:316064567852:web:85642cd678d7b4160b7789",
+            measurementId: "G-MWRHR1T40P"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentStation = "どこかの線路の上";
+
+        // 1. 駅名取得
+        async function getStation() {
+            const display = document.getElementById('station-display');
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const url = `https://express.heartrails.com/api/json?method=getStations&x=${pos.coords.longitude}&y=${pos.coords.latitude}`;
+                try {
+                    const res = await fetch(url);
+                    const data = await res.json();
                     if(data.response.station) {
-                        var s = data.response.station[0];
-                        display.innerText = s.line + " " + s.name + "駅 付近";
-                    } else {
-                        display.innerText = "駅が見つかりません";
+                        const s = data.response.station[0];
+                        currentStation = `${s.line} ${s.name}駅`;
+                        display.innerText = currentStation + " 付近";
                     }
-                }).catch(function(){ display.innerText = "通信エラー"; });
-            }, function(){
-                display.innerText = "位置情報をONにしてください";
+                } catch(e) { display.innerText = "通信エラー"; }
             });
         }
 
-        function sendBottle() {
-            var msg = document.getElementById('message-input').value;
-            if(!msg) return alert("中身を書いてね");
-            alert("流しました！\n" + msg);
-            document.getElementById('message-input').value = "";
-        }
+        // 2. ボトルを流す（保存）
+        document.getElementById('send-btn').onclick = async () => {
+            const input = document.getElementById('message-input');
+            if(!input.value) return alert("中身を書いてね");
+            
+            try {
+                await addDoc(collection(db, "bottles"), {
+                    text: input.value,
+                    station: currentStation,
+                    createdAt: serverTimestamp()
+                });
+                alert("ボトルを流しました！");
+                input.value = "";
+            } catch (e) {
+                alert("エラーで流せませんでした");
+                console.error(e);
+            }
+        };
 
-        function pickUpBottle() {
-            document.getElementById('picked-text').innerText = "誰かのボトルを拾いました！(テストメッセージ)";
-            document.getElementById('overlay').style.display = 'flex';
-        }
+        // 3. ボトルを拾う（ランダム取得）
+        document.getElementById('pick-btn').onclick = async () => {
+            const overlay = document.getElementById('overlay');
+            const textDisplay = document.getElementById('picked-text');
+            const stationDisplay = document.getElementById('picked-station');
+            
+            textDisplay.innerText = "拾い上げています...";
+            overlay.style.display = 'flex';
+
+            try {
+                // 最新の50件からランダムに1つ選ぶ（簡易的なランダム）
+                const q = query(collection(db, "bottles"), limit(50));
+                const querySnapshot = await getDocs(q);
+                const bottles = [];
+                querySnapshot.forEach((doc) => bottles.push(doc.data()));
+
+                if(bottles.length > 0) {
+                    const randomBottle = bottles[Math.floor(Math.random() * bottles.length)];
+                    stationDisplay.innerText = "漂着地: " + (randomBottle.station || "不明");
+                    textDisplay.innerText = randomBottle.text;
+                } else {
+                    textDisplay.innerText = "海にはまだ何も浮いていないようです...";
+                }
+            } catch (e) {
+                textDisplay.innerText = "ボトルが割れてしまいました（エラー）";
+            }
+        };
+
+        // 閉じるボタン
+        document.getElementById('close-btn').onclick = () => {
+            document.getElementById('overlay').style.display = 'none';
+        };
 
         window.onload = getStation;
     </script>
