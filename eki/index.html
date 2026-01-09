@@ -171,4 +171,87 @@
                     currentBottleId = id;
                     textDisplay.innerText = data.text;
                     textDisplay.style.opacity = 1.0;
-                    stationDisplay.innerText = `放流地: ${data.station}
+                    stationDisplay.innerText = `放流地: ${data.station} (現在の閲覧数: ${data.readCount}回)`;
+
+                    // 返信読み込み
+                    const qReply = query(collection(db, "replies"), where("parentId", "==", id), orderBy("createdAt", "asc"));
+                    const replySnap = await getDocs(qReply);
+                    replySnap.forEach((rd) => {
+                        const rDiv = document.createElement('div');
+                        rDiv.className = 'reply-item';
+                        rDiv.innerText = rd.data().text;
+                        replyList.appendChild(rDiv);
+                    });
+                }
+            } catch (e) { alert("ボトルの取得に失敗しました"); }
+        }
+
+        // 5. ボトルを拾う（通常）
+        document.getElementById('pick-btn').onclick = async () => {
+            const textDisplay = document.getElementById('picked-text');
+            const stationDisplay = document.getElementById('picked-station');
+            const replyList = document.getElementById('reply-list');
+            const overlay = document.getElementById('overlay');
+            document.getElementById('reply-form-area').style.display = 'block';
+            
+            textDisplay.innerText = "拾い上げています...";
+            replyList.innerHTML = "";
+            overlay.style.display = 'flex';
+
+            try {
+                const q = query(collection(db, "bottles"), where("readCount", "<", 11), limit(20));
+                const snap = await getDocs(q);
+                const bottles = [];
+                snap.forEach((d) => bottles.push({ id: d.id, ...d.data() }));
+
+                if(bottles.length > 0) {
+                    const target = bottles[Math.floor(Math.random() * bottles.length)];
+                    currentBottleId = target.id;
+                    const newCount = (target.readCount || 0) + 1;
+                    await updateDoc(doc(db, "bottles", target.id), { readCount: increment(1) });
+
+                    const opacities = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.25, 0.1, 0.03];
+                    textDisplay.innerText = target.text;
+                    textDisplay.style.opacity = opacities[newCount - 1] || 0.03;
+                    stationDisplay.innerText = `漂着地: ${target.station || "不明"} (${newCount}回目)`;
+
+                    const qReply = query(collection(db, "replies"), where("parentId", "==", target.id), orderBy("createdAt", "asc"));
+                    const replySnap = await getDocs(qReply);
+                    replySnap.forEach((rd) => {
+                        const div = document.createElement('div');
+                        div.className = 'reply-item';
+                        div.innerText = rd.data().text;
+                        replyList.appendChild(div);
+                    });
+                } else {
+                    textDisplay.innerText = "海にはもうボトルが残っていないようです...";
+                }
+            } catch (e) { console.error(e); }
+        };
+
+        // 返信送信
+        document.getElementById('reply-send-btn').onclick = async () => {
+            const input = document.getElementById('reply-input');
+            if(!input.value || !currentBottleId) return;
+            try {
+                await addDoc(collection(db, "replies"), {
+                    parentId: currentBottleId,
+                    text: input.value,
+                    createdAt: serverTimestamp()
+                });
+                const div = document.createElement('div');
+                div.className = 'reply-item';
+                div.innerText = input.value;
+                document.getElementById('reply-list').appendChild(div);
+                input.value = "";
+            } catch (e) { alert("返信失敗"); }
+        };
+
+        document.getElementById('close-btn').onclick = () => {
+            document.getElementById('overlay').style.display = 'none';
+        };
+
+        window.onload = () => { getStation(); loadMyBottles(); };
+    </script>
+</body>
+</html>
